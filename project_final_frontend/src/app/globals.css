@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+}
+
+:root {
+  --bg: #fffaf3;
+  --text-main: #3b312b;
+  --text-sub: #6f665f;
+  --border: #efe4d6;
+
+  --primary: #6dbb7a;
+  /* 채소 느낌 */
+  --primary-hover: #5aa567;
+
+  --accent: #ff9f43;
+  /* 음식/식탁 포인트 */
+  --accent-soft: #fff1df;
+
+  --card-bg: #ffffff;
+  --soft-bg: #f8f1e7;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
