@@ -21,7 +21,7 @@ export default function FridgePage() {
     return (
         <PrivateLayout>
             <Section>
-                <TextInput />
+                <TextInput getText={(value) => console.log(value)} />
                 <div className="flex gap-4">
                     <Button handleClick={() => alert("test")}>테스트_ 기본 버튼</Button>
                     <Button variant="secondary" handleClick={() => alert("secondary")}>보조 버튼</Button>
