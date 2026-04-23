@@ -21,7 +21,15 @@ export default function FridgePage() {
     return (
         <PrivateLayout>
             <Section>
-                <TextInput getText={(value) => console.log(value)} />
+                
+                <div className="mb-4 text-xl font-bold">냉장고 관리</div>
+                
+                <div className="flex items-center gap-2 justify-between">
+                    <TextInput getText={(text) => console.log("입력된 텍스트:", text)} placeholder="재료 이름 입력" />    
+                    <Button handleClick={() => alert("재료 추가")}>재료 추가</Button>
+                </div>
+                <div className="mb-4">
+                </div>
                 <div className="flex gap-4">
                     <Button handleClick={() => alert("test")}>테스트_ 기본 버튼</Button>
                     <Button variant="secondary" handleClick={() => alert("secondary")}>보조 버튼</Button>

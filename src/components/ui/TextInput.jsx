@@ -1,6 +1,6 @@
-export default function TextInput({ children, variant = "primary", getText }) {
+export default function TextInput({ children, variant = "primary", getText, placeholder = "" }) {
     const base =
-        "text-left bg-white rounded-lg focus:ring-1 focus:ring-gray-300 focus:outline-none transition w-full px-4 py-2";
+        "text-left text-sm font-semibold bg-white rounded-lg focus:ring-1 focus:ring-gray-300 focus:outline-none px-4 py-4 transition";
 
     const styles = {
         primary:
@@ -23,6 +23,6 @@ export default function TextInput({ children, variant = "primary", getText }) {
     };
 
     return (
-        <input type = "text" className={`${base} ${styles[variant]}`} style={inlineStyle[variant]} placeholder="텍스트 입력" onInput={(e) => getText(e.target.value)} />
+        <input type = "text" className={`${base} ${styles[variant]}`} style={inlineStyle[variant]} placeholder={placeholder} onInput={(e) => getText(e.target.value)} />
     );
 }
