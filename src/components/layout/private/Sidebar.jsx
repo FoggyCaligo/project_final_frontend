@@ -7,9 +7,9 @@ export default function Sidebar() {
     const pathname = usePathname();
 
     const menus = [
-        { name: "재료 관리", path: "/ingredients" },
-        { name: "레시피", path: "/recipes" },
-        { name: "커뮤니티", path: "/community" },
+        { name: "재료 관리", path: "./fridge" },
+        { name: "레시피", path: "./recipes" },
+        { name: "커뮤니티", path: "./community" },
     ];
 
     return (

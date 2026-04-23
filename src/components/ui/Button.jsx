@@ -1,4 +1,4 @@
-export default function Button({ children, variant = "primary" }) {
+export default function Button({ children, variant = "primary", handleClick }) {
     const base =
         "inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition";
 
@@ -25,8 +25,9 @@ export default function Button({ children, variant = "primary" }) {
         },
     };
 
+
     return (
-        <button className={`${base} ${styles[variant]}`} style={inlineStyle[variant]}>
+        <button className={`${base} ${styles[variant]}`} style={inlineStyle[variant]}  onClick={handleClick} type="button">
             {children}
         </button>
     );
