@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useState } from "react";
 import { fridgeApi } from "@/api/fridgeApi";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
-import PublicLayout from "@/components/layout/public/PublicLayout";
 import TextInput from "@/components/ui/TextInput";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
