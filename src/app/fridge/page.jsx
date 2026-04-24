@@ -15,16 +15,14 @@ import Modal from "@/components/ui/Modal.jsx";
 
 
 export default function FridgePage() {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     useEffect(() => {
         fridgeApi()
             .then((res) => console.log("API 성공:", res.data))
-            .catch((err) =>
-                console.error("API 에러:", {
-                    message: err?.message,
-                    status: err?.status,
-                    data: err?.data,
-                })
-            );
+            .catch(() => {
+                // API 실패는 개발 중 빈 응답일 수 있어 UI 동작을 막지 않도록 처리
+            });
     }, []);
 
     class Ingredient{
@@ -43,7 +41,7 @@ export default function FridgePage() {
                 name: this.name,
                 expire: this.expire,
                 qty: this.qty,
-            }
+            };
         }
     }
 
@@ -68,30 +66,7 @@ export default function FridgePage() {
 
 
 
-    class IngreModal{//재료 수정하는 모달
-        constructor(){
-            this.states= {close:0, add:1, edit:2};
-            this.stateIdx = this.states.close;
-            this.ingreIdx = 0;
-            this.ingre = new Ingredient();
-        }
-        toggle(stateIdx, ingreIdx=0){
-            this.stateIdx = stateIdx;
-            this.ingreIdx = ingreIdx;
-
-            alert(this.stateIdx !== this.states.close)
-        }
-        setData(ingreName, ingreExpire, ingreQty){
-            this.ingre.setData(ingreName,ingreExpire, ingreQty)
-        }
-        close(){
-            return this.ingre;
-        }
-    }
-
-    
     const fridge = new Fridge();
-    const ingreModal = new IngreModal();
     
 
     
@@ -106,7 +81,7 @@ export default function FridgePage() {
                             <div className="text-lg font-bold">냉장고 현황</div>
                             <div className="my-2 text-sm text-gray-600">현재 냉장고에 있는 재료들을 확인하세요</div>
                         </div>
-                        <Button handleClick={()=>{ingreModal.toggle(ingreModal.states.add)}}>식재료 추가</Button>
+                        <Button handleClick={() => setIsModalOpen(true)}>식재료 추가</Button>
                     </div>
                     <div className="flex flex-col gap-2">
                         {fridge.getData().map((each,idx) => (
@@ -114,8 +89,7 @@ export default function FridgePage() {
                                 name={each.getData().name} description="식재료 메모" expires={each.getData().expire} qty={each.getData().qty} 
                                 handleClickDelete={() => alert("재료 삭제")} 
                                 handleClickEdit={() => {
-                                    ingreModal.setData(each);
-                                    ingreModal.toggle(ingreModal.states.edit);
+                                    setIsModalOpen(true);
                                 }} 
                             />
                         ))}
@@ -123,20 +97,10 @@ export default function FridgePage() {
                     </div>
                 </Card>
 
-
-
                 {/*식재료 추가/수정 모달*/}
                 <Modal title="재료 추가" 
-                    isOpen={ingreModal.stateIdx !== ingreModal.states.close} 
-                    onClose={() => {
-                        if(ingreModal.stateIdx === ingreModal.states.add){
-                            fridge.add(ingreModal.ingre);
-                        }
-                        else if(ingreModal.stateIdx === ingreModal.states.edit){
-                            fridge.edit(ingreModal.ingreIdx, ingreModal.ingre);
-                        }
-                        IngreModal.toggle(false);
-                    }}>
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}>
                     <TextInput placeholder="재료 이름" getText={(text) => {} } />
                     <TextInput placeholder="유통기한" getText={(text) => console.log("유통기한:", text)} />
                     <TextInput placeholder="수량" getText={(text) => console.log("수량:", text)} />

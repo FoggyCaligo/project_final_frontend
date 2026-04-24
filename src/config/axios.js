@@ -35,12 +35,16 @@ api.interceptors.response.use(
       data?.message ??
       error?.message ??
       "Unexpected API error";
-
-    const normalizedError = new Error(message);
-    normalizedError.name = "ApiError";
-    normalizedError.status = status;
-    normalizedError.data = data;
-    normalizedError.originalError = error;
+    const normalizedError = {
+      name: "ApiError",
+      message,
+      status: status ?? null,
+      data: data ?? null,
+      code: error?.code ?? null,
+      url: error?.config?.url ?? null,
+      method: error?.config?.method ?? null,
+      originalError: error ?? null,
+    };
 
     return Promise.reject(normalizedError);
   }
