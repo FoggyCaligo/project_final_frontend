@@ -41,7 +41,7 @@ export default function Modal({
         header: "border-b px-6 py-5",
         headerTop: "flex items-center justify-between gap-4",
         body: "px-6 py-5",
-        footer: "flex justify-end gap-3 border-t px-6 py-4",
+        footer: "flex justify-between gap-3 px-6 py-4",
         closeButton:
             "inline-flex h-10 w-10 items-center justify-center text-4xl font-thin leading-none transition hover:opacity-80",
     };
@@ -103,7 +103,6 @@ export default function Modal({
                             onClick={onClose}
                             aria-label="모달 닫기"
                         >
-                            
                             <span className="text-3xl font-100">×</span>
                         </button>
                     </div>
@@ -124,11 +123,11 @@ export default function Modal({
 
                 {showFooter && (
                     <div className={base.footer} style={inlineStyle.footer}>
-                        <Button variant="secondary" handleClick={onClose}>
+                        <Button variant="secondary" className="w-fill" is_square="true" is_full="true" handleClick={onClose}>
                             {cancelText}
                         </Button>
 
-                        <Button variant="primary" handleClick={onConfirm}>
+                        <Button variant="primary" is_square="true" is_full="true" handleClick={onConfirm}>
                             {confirmText}
                         </Button>
                     </div>
