@@ -34,3 +34,20 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+
+## git 정책
+main
+  ↑ PR / merge는 신재용만
+dev
+  ↑ PR + 최소 1명 승인 필요
+feature/jaeyong-current-fridge
+feature/minjae-ingredient-crud
+feature/sujeong-recommend
+feature/yerin-shopping
+
+feature → dev 직접 push 불가
+PR 없이는 dev 병합 불가
+최소 1명 승인 필요
+승인 후 코드가 바뀌면 다시 승인 필요
