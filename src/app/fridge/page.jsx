@@ -11,6 +11,7 @@ import InputDate from "@/components/ui/InputDate.jsx";
 import Modal from "@/components/ui/Modal.jsx";
 import Recipe from "@/components/ui/Recipe.jsx";
 import TestImg from "@/assets/test_img.jpg";
+import Tag from "@/components/ui/Tag.jsx"
 import IngredientComponent from "./components/Ingredient.jsx"
 
 // 1. 식재료 데이터 모델
@@ -49,6 +50,7 @@ class ImageScanner {
 
 export default function FridgePage() {
     // 모달 모드: 0: 닫힘, 1: 수정, 2: 추가
+    const modalModes = {close: 0, edit: 1, add: 2};
     const [modalMode, setModalMode] = useState(0);
     const [editIdx, setEditIdx] = useState(null); // 수정 중인 인덱스 저장
     
@@ -82,10 +84,10 @@ export default function FridgePage() {
     }
 
     const handleConfirm = () => {
-        if (modalMode === 2) {
+        if (modalMode === modalModes.add) {
             // 추가 모드
             setStorage(prev => [...prev, currentIngredient]);
-        } else if (modalMode === 1 && editIdx !== null) {
+        } else if (modalMode === modalModes.edit && editIdx !== null) {
             // 수정 모드
             setStorage(prev => {
                 const next = [...prev];
@@ -93,7 +95,7 @@ export default function FridgePage() {
                 return next;
             });
         }
-        setModalMode(0);
+        setModalMode(modalModes.close);
     };
 
     function getRecipeList() {
@@ -156,10 +158,11 @@ export default function FridgePage() {
                         <Button handleClick={() => {
                             setCurrentIngredient(new Ingredient());
                             setScanner(new ImageScanner());
-                            setModalMode(2); // 추가 모드
+                            setModalMode(modalModes.add); // 추가 모드
                         }}>식재료 추가</Button>
                     </div>
                     <div className="flex flex-col gap-2">
+                        
                         {storage.map((each, idx) => (
                             <IngredientComponent
                                 key={idx}
@@ -174,7 +177,7 @@ export default function FridgePage() {
                                     setCurrentIngredient(each); // 기존 데이터 로드
                                     setScanner(new ImageScanner()); // 스캐너 초기화
                                     setEditIdx(idx); // 인덱스 저장
-                                    setModalMode(1); // 수정 모드
+                                    setModalMode(modalModes.edit); // 수정 모드
                                 }}
                             />
                         ))}
@@ -197,11 +200,11 @@ export default function FridgePage() {
                 </Card>
 
                 <Modal 
-                    title={modalMode === 2 ? "재료 추가" : "재료 수정"}
-                    isOpen={modalMode !== 0}
-                    onClose={() => setModalMode(0)}
+                    title={modalMode === modalModes.add ? "재료 추가" : "재료 수정"}
+                    isOpen={modalMode !== modalModes.close}
+                    onClose={() => setModalMode(modalModes.close)}
                     onConfirm={handleConfirm}
-                    confirmText={modalMode === 2 ? "추가" : "수정"}>
+                    confirmText={modalMode === modalModes.add ? "추가" : "수정"}>
                     <div className="flex flex-col gap-4">
                         {scanner.previewUrl ? (
                             <div className="w-full overflow-hidden rounded-2xl relative bg-gray-100 flex flex-col">
