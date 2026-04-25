@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect } from "react";
 import Button from "./Button";
@@ -38,12 +38,11 @@ export default function Modal({
     const base = {
         overlay: "fixed inset-0 z-50 flex items-center justify-center px-4 py-6",
         panel: "relative w-full max-w-[560px] overflow-hidden rounded-[20px] border bg-white shadow-lg",
-        header: "border-b px-6 py-5",
-        headerTop: "flex items-center justify-between gap-4",
+        header: "flex items-start justify-between gap-4 border-b px-6 py-5",
         body: "px-6 py-5",
-        footer: "flex justify-between gap-3 px-6 py-4",
+        footer: "flex justify-end gap-3 border-t px-6 py-4",
         closeButton:
-            "inline-flex h-10 w-10 items-center justify-center text-4xl font-thin leading-none transition hover:opacity-80",
+            "inline-flex h-10 w-10 items-center justify-center rounded-full border text-lg font-semibold transition hover:opacity-80",
     };
 
     const inlineStyle = {
@@ -67,7 +66,9 @@ export default function Modal({
             color: "var(--text-sub)",
         },
         closeButton: {
+            borderColor: "var(--border)",
             color: "var(--text-sub)",
+            backgroundColor: "var(--soft-bg)",
         },
     };
 
@@ -89,32 +90,33 @@ export default function Modal({
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className={base.header} style={inlineStyle.header}>
-                    <div className={base.headerTop}>
+                    <div className="flex-1">
                         <h2
-                            className="text-2xl font-extrabold"
+                            className="text-[24px] font-extrabold leading-tight"
                             style={inlineStyle.title}
                         >
                             {title}
                         </h2>
-                        <button
-                            type="button"
-                            className={base.closeButton}
-                            style={inlineStyle.closeButton}
-                            onClick={onClose}
-                            aria-label="모달 닫기"
-                        >
-                            <span className="text-3xl font-100">×</span>
-                        </button>
+
+                        {description ? (
+                            <p
+                                className="mt-2 text-sm leading-6"
+                                style={inlineStyle.description}
+                            >
+                                {description}
+                            </p>
+                        ) : null}
                     </div>
 
-                    {description ? (
-                        <p
-                            className="mt-2 text-sm leading-6"
-                            style={inlineStyle.description}
-                        >
-                            {description}
-                        </p>
-                    ) : null}
+                    <button
+                        type="button"
+                        className={base.closeButton}
+                        style={inlineStyle.closeButton}
+                        onClick={onClose}
+                        aria-label="모달 닫기"
+                    >
+                        ×
+                    </button>
                 </div>
 
                 <div className={base.body}>
@@ -123,11 +125,11 @@ export default function Modal({
 
                 {showFooter && (
                     <div className={base.footer} style={inlineStyle.footer}>
-                        <Button variant="secondary" className="w-fill" is_square="true" is_full="true" handleClick={onClose}>
+                        <Button variant="secondary" handleClick={onClose}>
                             {cancelText}
                         </Button>
 
-                        <Button variant="primary" is_square="true" is_full="true" handleClick={onConfirm}>
+                        <Button variant="primary" handleClick={onConfirm}>
                             {confirmText}
                         </Button>
                     </div>
