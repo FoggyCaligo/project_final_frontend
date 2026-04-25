@@ -48,3 +48,19 @@ img {
   display: block;
   max-width: 100%;
 }
+
+.themePrimary {
+    background-color: var(--primary);
+    color: white;
+
+}
+.themeSecondary {
+    background-color: white;
+    color: var(--text-sub);
+    border: 1px solid var(--border);
+}
+
+.themeAccent {
+    background-color: var(--accent);
+    color: var(--bg);
+}

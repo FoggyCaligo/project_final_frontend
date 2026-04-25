@@ -2,7 +2,7 @@ import Button from "./Button"
 
 export default function Recipe({ name, time, difficulty, imageURL, handleClick }) {
     return (
-        <div className="w-2xs overflow-hidden rounded-2xl relative bg-gray-100 flex flex-col border border-gray-100">
+        <div className="w-full overflow-hidden rounded-2xl relative bg-gray-100 flex flex-col border border-gray-100">
             <div className="h-48 relative overflow-hidden">
                 <img 
                     src={imageURL || "/next.svg"} 

@@ -11,6 +11,7 @@ import InputDate from "@/components/ui/InputDate.jsx";
 import Modal from "@/components/ui/Modal.jsx";
 import Recipe from "@/components/ui/Recipe.jsx";
 import TestImg from "@/assets/test_img.jpg";
+import Tag from "@/components/ui/Tag.jsx"
 import IngredientComponent from "./components/Ingredient.jsx"
 
 // 1. 식재료 데이터 모델
@@ -161,6 +162,7 @@ export default function FridgePage() {
                         }}>식재료 추가</Button>
                     </div>
                     <div className="flex flex-col gap-2">
+                        
                         {storage.map((each, idx) => (
                             <IngredientComponent
                                 key={idx}
