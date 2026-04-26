@@ -15,7 +15,7 @@ export default function Recipe({ name, time, difficulty, imageURL, handleClick }
                 <div className="text-xs text-gray-500 mb-3">
                     소요 시간: {time} | 난이도: {difficulty}
                 </div>
-                <Button is_full="true" variant="secondary" size="sm" handleClick={handleClick}>
+                <Button is_full={true} variant="secondary" handleClick={handleClick}>
                     레시피 보기
                 </Button>
             </div>
