@@ -140,7 +140,7 @@ export default function FridgePage() {
         <PrivateLayout>
             <Section>
                 <Card>
-                    <div className="flex flex-row justify-between items-center">
+                    <div className="flex flex-row justify-between items-center mb-4">
                         <div className="flex flex-col">
                             <Title>냉장고 현황</Title>
                             <SubTitle>현재 냉장고에 있는 재료들을 확인하세요</SubTitle>
@@ -175,7 +175,7 @@ export default function FridgePage() {
                 </Card>
 
                 {/*냉동 재료  */}
-                <Card style={{ backgroundColor: "#f3f4f6" }}>
+                <Card style={{ backgroundColor: "var(--border)" }}>
                     <div className="flex flex-col">
                         <Title>냉동 재료</Title>
                         <SubTitle>현재 냉장고에 있는 재료들 중 냉동 재료들 입니다.</SubTitle>
@@ -207,7 +207,7 @@ export default function FridgePage() {
                 </Card>
 
                 {/*냉장 재료  */}
-                <Card style={{ backgroundColor: "#f3f4f6" }}>
+                <Card style={{ backgroundColor: "var(--border)" }}>
                     <div className="flex flex-col">
                         <Title>냉장 재료</Title>
                         <SubTitle>현재 냉장고에 있는 재료들 중 냉장 재료들 입니다.</SubTitle>
