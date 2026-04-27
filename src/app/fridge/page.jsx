@@ -36,19 +36,21 @@ const StorageType2Kor = {
 }
     
 // 1. 식재료 데이터 모델 (프론트 로컬 상태)
-// 백엔드 DTO 매핑: id→ingredientId, name→name, expire→expirationDate, qty→quantity
+// 백엔드 DTO 매핑: id→ingredientId, name→name, expire→expirationDate, qty→quantity, categoryId→categoryId
 class Ingredient {
-    constructor(id = null, name = "", expire = null, qty = 0, storageType = StorageType.UNKNOWN, freshnessStatus = null) {
-        this.id = id;             // 백엔드 ingredientId
-        this.name = name;         // 백엔드 name
-        this.expire = expire;     // 백엔드 expirationDate (YYYY-MM-DD)
-        this.qty = qty;           // 백엔드 quantity
+    constructor(id = null, name = "", expire = null, qty = 0, storageType = StorageType.UNKNOWN, freshnessStatus = null, categoryId = null, category = null) {
+        this.id = id;
+        this.name = name;
+        this.expire = expire;
+        this.qty = qty;
         this.storageType = storageType;
         this.freshnessStatus = freshnessStatus;
+        this.categoryId = categoryId;
+        this.category = category;
     }
 
     cloneWith(fields) {
-        const next = new Ingredient(this.id, this.name, this.expire, this.qty, this.storageType, this.freshnessStatus);
+        const next = new Ingredient(this.id, this.name, this.expire, this.qty, this.storageType, this.freshnessStatus, this.categoryId, this.category);
         Object.assign(next, fields);
         return next;
     }
@@ -62,7 +64,9 @@ function fromApiItem(item) {
         item.expirationDate,
         item.quantity,
         item.storageType ?? StorageType.UNKNOWN,
-        item.freshnessStatus ?? null
+        item.freshnessStatus ?? null,
+        item.categoryId ?? null,
+        item.category ?? null
     );
 }
 
@@ -73,6 +77,7 @@ function toApiDto(ingredient) {
         expirationDate: ingredient.expire,
         quantity: Number(ingredient.qty),
         storageType: ingredient.storageType,
+        categoryId: ingredient.categoryId ?? null,
     };
 }
 
@@ -103,6 +108,7 @@ export default function FridgePage() {
     
     const [storage, setStorage] = useState([]);
     const [summary, setSummary] = useState(null);
+    const [categories, setCategories] = useState([]);
     const [currentIngredient, setCurrentIngredient] = useState(new Ingredient());
     const [scanner, setScanner] = useState(new ImageScanner());
 
@@ -130,10 +136,20 @@ export default function FridgePage() {
         }
     }, []);
 
+    const fetchCategories = useCallback(async () => {
+        try {
+            const res = await fridgeApi.getCategories();
+            setCategories(res.data?.data ?? []);
+        } catch (err) {
+            console.error("카테고리 목록 조회 실패:", err);
+        }
+    }, []);
+
     useEffect(() => {
         fetchIngredients();
         fetchSummary();
-    }, [fetchIngredients, fetchSummary]);
+        fetchCategories();
+    }, [fetchIngredients, fetchSummary, fetchCategories]);
 
     // 이미지 파일 변경 시 미리보기 생성
     useEffect(() => {
@@ -248,6 +264,7 @@ export default function FridgePage() {
                                 expires={each.expire}
                                 qty={each.qty}
                                 storageType={StorageType2Kor[each.storageType]}
+                                category={each.category}
                                 freshnessStatus={each.freshnessStatus}
                                 handleClickDelete={() => handleClickDelete(each)}
                                 handleClickEdit={() => {
@@ -279,6 +296,7 @@ export default function FridgePage() {
                                         expires={each.expire}
                                         qty={each.qty}
                                         storageType={StorageType2Kor[each.storageType]}
+                                        category={each.category}
                                         freshnessStatus={each.freshnessStatus}
                                         handleClickDelete={() => handleClickDelete(each)}
                                         handleClickEdit={() => {
@@ -363,6 +381,16 @@ export default function FridgePage() {
                             placeholder="유통기한"
                             setText={currentIngredient.expire}
                             getText={(val) => updateField('expire', val)}
+                        />
+                        <Select
+                            placeholder="카테고리 선택"
+                            options={categories.map(cat => ({
+                                label: cat.categoryName,
+                                value: cat.categoryId
+                            }))}
+                            setText={currentIngredient.categoryId}
+                            getText={(val) => updateField('categoryId', val)}
+                            is_full="true"
                         />
                         <Select
                             placeholder="보관 장소 선택"
