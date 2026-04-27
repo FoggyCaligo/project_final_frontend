@@ -36,11 +36,11 @@ const StorageType2Kor = {
 }
     
 // 1. 식재료 데이터 모델 (프론트 로컬 상태)
-// 백엔드 DTO 매핑: name→ingredientName, expire→expirationDate, qty→quantity
+// 백엔드 DTO 매핑: id→ingredientId, name→name, expire→expirationDate, qty→quantity
 class Ingredient {
     constructor(id = null, name = "", expire = null, qty = 0, storageType = StorageType.UNKNOWN, freshnessStatus = null) {
-        this.id = id;             // 백엔드 userIngredientId
-        this.name = name;         // 백엔드 ingredientName
+        this.id = id;             // 백엔드 ingredientId
+        this.name = name;         // 백엔드 name
         this.expire = expire;     // 백엔드 expirationDate (YYYY-MM-DD)
         this.qty = qty;           // 백엔드 quantity
         this.storageType = storageType;
@@ -54,11 +54,11 @@ class Ingredient {
     }
 }
 
-// 백엔드 응답 항목 → 프론트 Ingredient 객체 변환
+// 백엔드 응답 항목(IngredientResponse) → 프론트 Ingredient 객체 변환
 function fromApiItem(item) {
     return new Ingredient(
-        item.userIngredientId,
-        item.ingredientName,
+        item.ingredientId,
+        item.name,
         item.expirationDate,
         item.quantity,
         item.storageType ?? StorageType.UNKNOWN,
@@ -66,10 +66,10 @@ function fromApiItem(item) {
     );
 }
 
-// 프론트 Ingredient → 백엔드 요청 DTO 변환
+// 프론트 Ingredient → 백엔드 요청 DTO(CreateIngredientRequest / UpdateIngredientRequest) 변환
 function toApiDto(ingredient) {
     return {
-        ingredientName: ingredient.name,
+        name: ingredient.name,
         expirationDate: ingredient.expire,
         quantity: Number(ingredient.qty),
         storageType: ingredient.storageType,
@@ -195,10 +195,17 @@ export default function FridgePage() {
         ]);
     }
 
+    // 보관 장소 타입별로 카드를 생성하기 위한 배열 정의
+    const storageCategories = Object.keys(StorageType).map(typeKey => ({
+        type: StorageType[typeKey], // 예: StorageType.REFRIGERATED
+        title: StorageType2Kor[typeKey], // 예: "냉장"
+    }));
+
     return (
         <PrivateLayout>
             <Section>
-                <Card>
+                {/* 냉장고 현황 카드 (모든 재료 표시) */}
+                <Card style={{ backgroundColor: "var(--border)" }}>
                     <div className="flex flex-row justify-between items-center mb-4">
                         <div className="flex flex-col">
                             <Title>냉장고 현황</Title>
@@ -211,7 +218,7 @@ export default function FridgePage() {
                         }}>식재료 추가</Button>
                     </div>
                     <div className="flex flex-col gap-2">
-                        
+                        {/* 모든 재료 표시 */}
                         {storage.map((each, idx) => (
                             <IngredientComponent
                                 key={each.id ?? idx}
@@ -232,68 +239,44 @@ export default function FridgePage() {
                     </div>
                 </Card>
 
-                {/*냉동 재료  */}
-                <Card style={{ backgroundColor: "var(--border)" }}>
-                    <div className="flex flex-col">
-                        <Title>냉동 재료</Title>
-                        <SubTitle>현재 냉장고에 있는 재료들 중 냉동 재료들 입니다.</SubTitle>
-                    </div>
+                {/* 보관 장소 타입별 재료 표시 (반복문 사용) */}
+                {storageCategories.map((category) => (
+                    <Card key={category.type} style={{ backgroundColor: "var(--border)" }}>
+                        <div className="flex flex-col">
+                            <Title>{category.title}</Title>
+                            <SubTitle>현재 냉장고에 있는 재료들 중 {category.title} 으로 분류된 재료들 입니다.</SubTitle>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            {storage
+                                .filter(each => each.storageType === category.type)
+                                .map((each, idx) => (
+                                    <IngredientComponent
+                                        key={each.id ?? idx}
+                                        name={each.name}
+                                        description="식재료 메모"
+                                        expires={each.expire}
+                                        qty={each.qty}
+                                        storageType={StorageType2Kor[each.storageType]}
+                                        handleClickDelete={() => handleClickDelete(each)}
+                                        handleClickEdit={() => {
+                                            setCurrentIngredient(each);
+                                            setScanner(new ImageScanner());
+                                            setEditIdx(storage.indexOf(each));
+                                            setModalMode(ModalModes.edit);
+                                        }}
+                                    />
+                                ))
+                            }
+                        </div>
+                    </Card>
+                ))}
 
-                    <div className="flex flex-col gap-2">
-                        {storage.filter(each => each.storageType === StorageType.FROZEN).map((each, idx) => (
-                            <IngredientComponent
-                                key={each.id ?? idx}
-                                name={each.name}
-                                description="식재료 메모"
-                                expires={each.expire}
-                                qty={each.qty}
-                                storageType={StorageType2Kor[each.storageType]}
-                                handleClickDelete={() => handleClickDelete(each)}
-                                handleClickEdit={() => {
-                                    setCurrentIngredient(each);
-                                    setScanner(new ImageScanner());
-                                    setEditIdx(storage.indexOf(each));
-                                    setModalMode(ModalModes.edit);
-                                }}
-                            />
-                        ))}
-                    </div>
-
-                </Card>
-
-                {/*냉장 재료  */}
-                <Card style={{ backgroundColor: "var(--border)" }}>
-                    <div className="flex flex-col">
-                        <Title>냉장 재료</Title>
-                        <SubTitle>현재 냉장고에 있는 재료들 중 냉장 재료들 입니다.</SubTitle>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        {storage.filter(each => each.storageType === StorageType.REFRIGERATED).map((each, idx) => (
-                            <IngredientComponent
-                                key={each.id ?? idx}
-                                name={each.name}
-                                description="식재료 메모"
-                                expires={each.expire}
-                                qty={each.qty}
-                                storageType={StorageType2Kor[each.storageType]}
-                                handleClickDelete={() => handleClickDelete(each)}
-                                handleClickEdit={() => {
-                                    setCurrentIngredient(each);
-                                    setScanner(new ImageScanner());
-                                    setEditIdx(storage.indexOf(each));
-                                    setModalMode(ModalModes.edit);
-                                }}
-                            />
-                        ))}
-                    </div>
-                </Card>
-
-
+                {/* 추천 레시피 카드 */}
                 <Card>
                     <div className="text-lg font-bold mb-6">추천 레시피</div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {RecipeList.map((each, idx) => (
-                            <Recipe 
+                            <Recipe
                                 key={idx}
                                 name={each.name}
                                 time={each.time}
@@ -303,11 +286,9 @@ export default function FridgePage() {
                         ))}
                     </div>
                 </Card>
-                
 
-
-
-                <Modal 
+                {/* Modal 컴포넌트는 변경 없음 */}
+                <Modal
                     title={modalMode === ModalModes.add ? "재료 추가" : "재료 수정"}
                     isOpen={modalMode !== ModalModes.close}
                     onClose={() => setModalMode(ModalModes.close)}
@@ -343,20 +324,20 @@ export default function FridgePage() {
                                 <Button is_square="true" is_full="true" variant="accent" handleClick={() => fileInputRef.current?.click()}>
                                     이미지 인식
                                 </Button>
-                                <input 
-                                    type="file" 
-                                    ref={fileInputRef} 
-                                    className="hidden" 
-                                    accept="image/*" 
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    className="hidden"
+                                    accept="image/*"
                                     onChange={(e) => {
                                         const file = e.target.files[0];
                                         if (file) setScanner(prev => prev.cloneWith({ file }));
-                                    }} 
+                                    }}
                                 />
                             </div>
                         )}
-                        <InputDate 
-                            placeholder="유통기한" 
+                        <InputDate
+                            placeholder="유통기한"
                             setText={currentIngredient.expire}
                             getText={(val) => updateField('expire', val)}
                         />
@@ -370,8 +351,8 @@ export default function FridgePage() {
                             getText={(val) => updateField('storageType', val)}
                             is_full="true"
                         />
-                        <InputText 
-                            placeholder="수량" 
+                        <InputText
+                            placeholder="수량"
                             setText={currentIngredient.qty}
                             getText={(val) => updateField('qty', val)}
                         />
