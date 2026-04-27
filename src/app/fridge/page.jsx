@@ -154,7 +154,7 @@ export default function FridgePage() {
         <PrivateLayout>
             <Section>
                 {/* 냉장고 현황 카드 (모든 재료 표시) */}
-                <Card>
+                <Card style={{ backgroundColor: "var(--border)" }}>
                     <div className="flex flex-row justify-between items-center mb-4">
                         <div className="flex flex-col">
                             <Title>냉장고 현황</Title>
@@ -192,7 +192,7 @@ export default function FridgePage() {
 
                 {/* 보관 장소 타입별 재료 표시 (반복문 사용) */}
                 {storageCategories.map((category) => (
-                    <Card key={category.type} style={{ backgroundColor: "var(--border)" }}>
+                    <Card key={category.type}>
                         <div className="flex flex-col">
                             <Title>{category.title} </Title>
                             <SubTitle>현재 냉장고에 있는 재료들 중 {category.title} 으로 분류된 재료들 입니다.</SubTitle>
