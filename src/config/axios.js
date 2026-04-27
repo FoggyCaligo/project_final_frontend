@@ -21,6 +21,7 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    config.headers["X-User-Id"] = "2"; // 백엔드1 임시 인증용 헤더 (개발용)
     return config;
   },
   (error) => Promise.reject(error)
