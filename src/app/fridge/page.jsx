@@ -14,7 +14,9 @@ import TestImg from "@/assets/test_img.jpg";
 import Tag from "@/components/ui/Tag.jsx"
 import Title from "@/components/ui/Title.jsx";
 import SubTitle from "@/components/ui/SubTitle.jsx";
+import Select from "@/components/ui/Select.jsx";
 import IngredientComponent from "./components/Ingredient.jsx"
+
 
 
 // 모달 모드: 0: 닫힘, 1: 수정, 2: 추가
@@ -26,6 +28,12 @@ const StorageType = {
     ROOM_TEMP: "ROOM_TEMP",
     UNKNOWN: "UNKNOWN",
 };
+const StorageType2Kor = {
+    REFRIGERATED: "냉장",
+    FROZEN: "냉동",
+    ROOM_TEMP: "실온",
+    UNKNOWN: '알 수 없음',
+}
     
 // 1. 식재료 데이터 모델
 class Ingredient {
@@ -309,11 +317,22 @@ export default function FridgePage() {
                             setText={currentIngredient.expire}
                             getText={(val) => updateField('expire', val)}
                         />
+                        <Select
+                            placeholder="보관 장소 선택"
+                            options={Object.entries(StorageType2Kor).map(([key, label]) => ({
+                                label: label,
+                                value: key
+                            }))}
+                            setText={currentIngredient.storageType}
+                            getText={(val) => updateField('storageType', val)}
+                            is_full="true"
+                        />
                         <InputText 
                             placeholder="수량" 
                             setText={currentIngredient.qty}
                             getText={(val) => updateField('qty', val)}
                         />
+
                     </div>
                 </Modal>
             </Section>
