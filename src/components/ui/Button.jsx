@@ -8,7 +8,7 @@ export default function Button({ children, variant = "primary", handleClick, is_
         secondary:
             "themeSecondary hover:opacity-90",
         accent:
-            "themeAccent shadow-sm hover:opacity-90",
+            "themeAccent shadow- sm hover:opacity-90",
         square:
             "rounded-lg",
         full : 
