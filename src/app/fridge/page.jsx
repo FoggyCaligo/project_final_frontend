@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { fridgeApi } from "@/api/fridgeApi";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import InputText from "@/components/ui/InputText.jsx";
@@ -35,20 +35,45 @@ const StorageType2Kor = {
     UNKNOWN: '알 수 없음',
 }
     
-// 1. 식재료 데이터 모델
+// 1. 식재료 데이터 모델 (프론트 로컬 상태)
+// 백엔드 DTO 매핑: id→ingredientId, name→name, expire→expirationDate, qty→quantity
 class Ingredient {
-    constructor(name = "", expire = null, qty = 0, storageType=StorageType.UNKNOWN) {
-        this.name = name;
-        this.expire = expire;
-        this.qty = qty;
+    constructor(id = null, name = "", expire = null, qty = 0, storageType = StorageType.UNKNOWN, freshnessStatus = null) {
+        this.id = id;             // 백엔드 ingredientId
+        this.name = name;         // 백엔드 name
+        this.expire = expire;     // 백엔드 expirationDate (YYYY-MM-DD)
+        this.qty = qty;           // 백엔드 quantity
         this.storageType = storageType;
+        this.freshnessStatus = freshnessStatus;
     }
 
     cloneWith(fields) {
-        const next = new Ingredient(this.name, this.expire, this.qty, this.storageType);
+        const next = new Ingredient(this.id, this.name, this.expire, this.qty, this.storageType, this.freshnessStatus);
         Object.assign(next, fields);
         return next;
     }
+}
+
+// 백엔드 응답 항목(IngredientResponse) → 프론트 Ingredient 객체 변환
+function fromApiItem(item) {
+    return new Ingredient(
+        item.ingredientId,
+        item.name,
+        item.expirationDate,
+        item.quantity,
+        item.storageType ?? StorageType.UNKNOWN,
+        item.freshnessStatus ?? null
+    );
+}
+
+// 프론트 Ingredient → 백엔드 요청 DTO(CreateIngredientRequest / UpdateIngredientRequest) 변환
+function toApiDto(ingredient) {
+    return {
+        name: ingredient.name,
+        expirationDate: ingredient.expire,
+        quantity: Number(ingredient.qty),
+        storageType: ingredient.storageType,
+    };
 }
 
 // 2. 이미지 스캐너 데이터 모델
@@ -83,6 +108,23 @@ export default function FridgePage() {
     
 
     const RecipeList = getRecipeList();
+
+    // 초기 로드: 백엔드에서 식재료 목록 조회
+    const fetchIngredients = useCallback(async () => {
+        try {
+            const res = await fridgeApi.getIngredients();
+            const items = res.data?.data?.items ?? [];
+            setStorage(items.map(fromApiItem));
+        } catch (err) {
+            console.error("식재료 목록 조회 실패:", err);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchIngredients();
+    }, [fetchIngredients]);
+
+    // 이미지 파일 변경 시 미리보기 생성
     useEffect(() => {
         if (!scanner.file) {
             setScanner(prev => prev.cloneWith({ previewUrl: null, results: [] }));
@@ -105,19 +147,28 @@ export default function FridgePage() {
         updateField('name', selected);
     }
 
-    const handleConfirm = () => {
-        if (modalMode === ModalModes.add) {
-            // 추가 모드
-            setStorage(prev => [...prev, currentIngredient]);
-        } else if (modalMode === ModalModes.edit && editIdx !== null) {
-            // 수정 모드
-            setStorage(prev => {
-                const next = [...prev];
-                next[editIdx] = currentIngredient;
-                return next;
-            });
+    const handleConfirm = async () => {
+        try {
+            const dto = toApiDto(currentIngredient);
+            if (modalMode === ModalModes.add) {
+                await fridgeApi.addIngredient(dto);
+            } else if (modalMode === ModalModes.edit && editIdx !== null) {
+                await fridgeApi.updateIngredient(currentIngredient.id, dto);
+            }
+            await fetchIngredients(); // 서버 최신 상태 반영
+        } catch (err) {
+            console.error("식재료 저장 실패:", err);
         }
         setModalMode(ModalModes.close);
+    };
+
+    const handleClickDelete = async (ingredient) => {
+        try {
+            await fridgeApi.deleteIngredient(ingredient.id);
+            await fetchIngredients();
+        } catch (err) {
+            console.error("식재료 삭제 실패:", err);
+        }
     };
 
     function getRecipeList() {
@@ -170,20 +221,18 @@ export default function FridgePage() {
                         {/* 모든 재료 표시 */}
                         {storage.map((each, idx) => (
                             <IngredientComponent
-                                key={idx}
+                                key={each.id ?? idx}
                                 name={each.name}
                                 description="식재료 메모"
                                 expires={each.expire}
                                 qty={each.qty}
                                 storageType={StorageType2Kor[each.storageType]}
-                                handleClickDelete={() => {
-                                    setStorage(prev => prev.filter((_, i) => i !== idx));
-                                }}
+                                handleClickDelete={() => handleClickDelete(each)}
                                 handleClickEdit={() => {
-                                    setCurrentIngredient(each); // 기존 데이터 로드
-                                    setScanner(new ImageScanner()); // 스캐너 초기화
-                                    setEditIdx(idx); // 인덱스 저장
-                                    setModalMode(ModalModes.edit); // 수정 모드
+                                    setCurrentIngredient(each);
+                                    setScanner(new ImageScanner());
+                                    setEditIdx(idx);
+                                    setModalMode(ModalModes.edit);
                                 }}
                             />
                         ))}
@@ -192,9 +241,9 @@ export default function FridgePage() {
 
                 {/* 보관 장소 타입별 재료 표시 (반복문 사용) */}
                 {storageCategories.map((category) => (
-                    <Card key={category.type}>
+                    <Card key={category.type} style={{ backgroundColor: "var(--border)" }}>
                         <div className="flex flex-col">
-                            <Title>{category.title} </Title>
+                            <Title>{category.title}</Title>
                             <SubTitle>현재 냉장고에 있는 재료들 중 {category.title} 으로 분류된 재료들 입니다.</SubTitle>
                         </div>
                         <div className="flex flex-col gap-2">
@@ -202,20 +251,18 @@ export default function FridgePage() {
                                 .filter(each => each.storageType === category.type)
                                 .map((each, idx) => (
                                     <IngredientComponent
-                                        key={idx} // 주의: storage 데이터에 고유 ID가 있다면 idx 대신 사용하는 것이 좋습니다.
+                                        key={each.id ?? idx}
                                         name={each.name}
                                         description="식재료 메모"
                                         expires={each.expire}
                                         qty={each.qty}
                                         storageType={StorageType2Kor[each.storageType]}
-                                        handleClickDelete={() => {
-                                            setStorage(prev => prev.filter((_, i) => i !== idx));
-                                        }}
+                                        handleClickDelete={() => handleClickDelete(each)}
                                         handleClickEdit={() => {
-                                            setCurrentIngredient(each); // 기존 데이터 로드
-                                            setScanner(new ImageScanner()); // 스캐너 초기화
-                                            setEditIdx(idx); // 인덱스 저장
-                                            setModalMode(ModalModes.edit); // 수정 모드
+                                            setCurrentIngredient(each);
+                                            setScanner(new ImageScanner());
+                                            setEditIdx(storage.indexOf(each));
+                                            setModalMode(ModalModes.edit);
                                         }}
                                     />
                                 ))
