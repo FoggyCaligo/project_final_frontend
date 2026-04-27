@@ -1,5 +1,6 @@
 import Sidebar from "./Sidebar";
 import PrivateHeader from "./PrivateHeader";
+import FloatingChatbot from "@/components/chat/FloatingChatbot";
 
 export default function PrivateLayout({ children }) {
     return (
@@ -14,7 +15,9 @@ export default function PrivateLayout({ children }) {
                 <main className="flex-1 p-6">
                     {children}
                 </main>
+                <FloatingChatbot />
             </div>
+
 
         </div>
     );
