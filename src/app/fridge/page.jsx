@@ -14,7 +14,9 @@ import TestImg from "@/assets/test_img.jpg";
 import Tag from "@/components/ui/Tag.jsx"
 import Title from "@/components/ui/Title.jsx";
 import SubTitle from "@/components/ui/SubTitle.jsx";
+import Select from "@/components/ui/Select.jsx";
 import IngredientComponent from "./components/Ingredient.jsx"
+
 
 
 // 모달 모드: 0: 닫힘, 1: 수정, 2: 추가
@@ -26,6 +28,12 @@ const StorageType = {
     ROOM_TEMP: "ROOM_TEMP",
     UNKNOWN: "UNKNOWN",
 };
+const StorageType2Kor = {
+    REFRIGERATED: "냉장",
+    FROZEN: "냉동",
+    ROOM_TEMP: "실온",
+    UNKNOWN: '알 수 없음',
+}
     
 // 1. 식재료 데이터 모델 (프론트 로컬 상태)
 // 백엔드 DTO 매핑: name→ingredientName, expire→expirationDate, qty→quantity
@@ -211,6 +219,7 @@ export default function FridgePage() {
                                 description="식재료 메모"
                                 expires={each.expire}
                                 qty={each.qty}
+                                storageType={StorageType2Kor[each.storageType]}
                                 handleClickDelete={() => handleClickDelete(each)}
                                 handleClickEdit={() => {
                                     setCurrentIngredient(each);
@@ -238,6 +247,7 @@ export default function FridgePage() {
                                 description="식재료 메모"
                                 expires={each.expire}
                                 qty={each.qty}
+                                storageType={StorageType2Kor[each.storageType]}
                                 handleClickDelete={() => handleClickDelete(each)}
                                 handleClickEdit={() => {
                                     setCurrentIngredient(each);
@@ -265,6 +275,7 @@ export default function FridgePage() {
                                 description="식재료 메모"
                                 expires={each.expire}
                                 qty={each.qty}
+                                storageType={StorageType2Kor[each.storageType]}
                                 handleClickDelete={() => handleClickDelete(each)}
                                 handleClickEdit={() => {
                                     setCurrentIngredient(each);
@@ -349,11 +360,22 @@ export default function FridgePage() {
                             setText={currentIngredient.expire}
                             getText={(val) => updateField('expire', val)}
                         />
+                        <Select
+                            placeholder="보관 장소 선택"
+                            options={Object.entries(StorageType2Kor).map(([key, label]) => ({
+                                label: label,
+                                value: key
+                            }))}
+                            setText={currentIngredient.storageType}
+                            getText={(val) => updateField('storageType', val)}
+                            is_full="true"
+                        />
                         <InputText 
                             placeholder="수량" 
                             setText={currentIngredient.qty}
                             getText={(val) => updateField('qty', val)}
                         />
+
                     </div>
                 </Modal>
             </Section>
