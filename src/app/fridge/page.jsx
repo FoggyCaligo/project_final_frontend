@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { fridgeApi } from "@/api/fridgeApi";
@@ -175,7 +175,7 @@ export default function FridgePage() {
                 </Card>
 
                 {/*냉동 재료  */}
-                <Card>
+                <Card style={{ backgroundColor: "#f3f4f6" }}>
                     <div className="flex flex-col">
                         <Title>냉동 재료</Title>
                         <SubTitle>현재 냉장고에 있는 재료들 중 냉동 재료들 입니다.</SubTitle>
@@ -183,29 +183,31 @@ export default function FridgePage() {
 
                     <div className="flex flex-col gap-2">
                         {storage.map((each, idx) => (
-                            <IngredientComponent
-                                key={idx}
-                                name={each.name}
-                                description="식재료 메모"
-                                expires={each.expire}
-                                qty={each.qty}
-                                handleClickDelete={() => {
-                                    setStorage(prev => prev.filter((_, i) => i !== idx));
-                                }}
-                                handleClickEdit={() => {
-                                    setCurrentIngredient(each); // 기존 데이터 로드
-                                    setScanner(new ImageScanner()); // 스캐너 초기화
-                                    setEditIdx(idx); // 인덱스 저장
-                                    setModalMode(ModalModes.edit); // 수정 모드
-                                }}
-                            />
+                            each.storageType === StorageType.FROZEN && (
+                                <IngredientComponent
+                                    key={idx}
+                                    name={each.name}
+                                    description="식재료 메모"
+                                    expires={each.expire}
+                                    qty={each.qty}
+                                    handleClickDelete={() => {
+                                        setStorage(prev => prev.filter((_, i) => i !== idx));
+                                    }}
+                                    handleClickEdit={() => {
+                                        setCurrentIngredient(each); // 기존 데이터 로드
+                                        setScanner(new ImageScanner()); // 스캐너 초기화
+                                        setEditIdx(idx); // 인덱스 저장
+                                        setModalMode(ModalModes.edit); // 수정 모드
+                                    }}
+                                />
+                            )
                         ))}
                     </div>
 
                 </Card>
 
                 {/*냉장 재료  */}
-                <Card>
+                <Card style={{ backgroundColor: "#f3f4f6" }}>
                     <div className="flex flex-col">
                         <Title>냉장 재료</Title>
                         <SubTitle>현재 냉장고에 있는 재료들 중 냉장 재료들 입니다.</SubTitle>
@@ -213,22 +215,24 @@ export default function FridgePage() {
                     <div className="flex flex-col gap-2">
                         
                         {storage.map((each, idx) => (
-                            <IngredientComponent
-                                key={idx}
-                                name={each.name}
-                                description="식재료 메모"
-                                expires={each.expire}
-                                qty={each.qty}
-                                handleClickDelete={() => {
-                                    setStorage(prev => prev.filter((_, i) => i !== idx));
-                                }}
-                                handleClickEdit={() => {
-                                    setCurrentIngredient(each); // 기존 데이터 로드
-                                    setScanner(new ImageScanner()); // 스캐너 초기화
-                                    setEditIdx(idx); // 인덱스 저장
-                                    setModalMode(ModalModes.edit); // 수정 모드
-                                }}
-                            />
+                            each.storageType === StorageType.REFRIGERATED && (
+                                <IngredientComponent
+                                    key={idx}
+                                    name={each.name}
+                                    description="식재료 메모"
+                                    expires={each.expire}
+                                    qty={each.qty}
+                                    handleClickDelete={() => {
+                                        setStorage(prev => prev.filter((_, i) => i !== idx));
+                                    }}
+                                    handleClickEdit={() => {
+                                        setCurrentIngredient(each); // 기존 데이터 로드
+                                        setScanner(new ImageScanner()); // 스캐너 초기화
+                                        setEditIdx(idx); // 인덱스 저장
+                                        setModalMode(ModalModes.edit); // 수정 모드
+                                    }}
+                                />
+                            )
                         ))}
                     </div>
                 </Card>
