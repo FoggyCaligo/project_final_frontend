@@ -1,4 +1,4 @@
-export default function TextInput({ children, variant = "primary", getText, placeholder = "" }) {
+export default function InputText({ children, variant = "primary", getText, placeholder = "" }) {
     const base =
         "text-left text-sm font-semibold bg-white rounded-lg focus:ring-1 focus:ring-gray-300 focus:outline-none px-4 py-4 transition";
 
@@ -23,6 +23,6 @@ export default function TextInput({ children, variant = "primary", getText, plac
     };
 
     return (
-        <input type = "text" className={`${base} ${styles[variant]}`} style={inlineStyle[variant]} placeholder={placeholder} onInput={(e) => getText(e.target.value)} />
+        <input type = "num" className={`${base} ${styles[variant]}`} style={inlineStyle[variant]} placeholder={placeholder} onInput={(e) => getText(e.target.value)} />
     );
 }
