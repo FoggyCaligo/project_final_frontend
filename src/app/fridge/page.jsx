@@ -12,18 +12,32 @@ import Modal from "@/components/ui/Modal.jsx";
 import Recipe from "@/components/ui/Recipe.jsx";
 import TestImg from "@/assets/test_img.jpg";
 import Tag from "@/components/ui/Tag.jsx"
+import Title from "@/components/ui/Title.jsx";
+import SubTitle from "@/components/ui/SubTitle.jsx";
 import IngredientComponent from "./components/Ingredient.jsx"
 
+
+// 모달 모드: 0: 닫힘, 1: 수정, 2: 추가
+const ModalModes = {close: 0, edit: 1, add: 2};
+//식재료 보관 형식
+const StorageType = {
+    REFRIGERATED: "REFRIGERATED",
+    FROZEN: "FROZEN",
+    ROOM_TEMP: "ROOM_TEMP",
+    UNKNOWN: "UNKNOWN",
+};
+    
 // 1. 식재료 데이터 모델
 class Ingredient {
-    constructor(name = "", expire = null, qty = 0) {
+    constructor(name = "", expire = null, qty = 0, storageType=StorageType.UNKNOWN) {
         this.name = name;
         this.expire = expire;
         this.qty = qty;
+        this.storageType = storageType;
     }
 
     cloneWith(fields) {
-        const next = new Ingredient(this.name, this.expire, this.qty);
+        const next = new Ingredient(this.name, this.expire, this.qty, this.storageType);
         Object.assign(next, fields);
         return next;
     }
@@ -49,8 +63,6 @@ class ImageScanner {
 }
 
 export default function FridgePage() {
-    // 모달 모드: 0: 닫힘, 1: 수정, 2: 추가
-    const modalModes = {close: 0, edit: 1, add: 2};
     const [modalMode, setModalMode] = useState(0);
     const [editIdx, setEditIdx] = useState(null); // 수정 중인 인덱스 저장
     
@@ -59,6 +71,8 @@ export default function FridgePage() {
     const [storage, setStorage] = useState([]);
     const [currentIngredient, setCurrentIngredient] = useState(new Ingredient());
     const [scanner, setScanner] = useState(new ImageScanner());
+
+    
 
     const RecipeList = getRecipeList();
     useEffect(() => {
@@ -84,10 +98,10 @@ export default function FridgePage() {
     }
 
     const handleConfirm = () => {
-        if (modalMode === modalModes.add) {
+        if (modalMode === ModalModes.add) {
             // 추가 모드
             setStorage(prev => [...prev, currentIngredient]);
-        } else if (modalMode === modalModes.edit && editIdx !== null) {
+        } else if (modalMode === ModalModes.edit && editIdx !== null) {
             // 수정 모드
             setStorage(prev => {
                 const next = [...prev];
@@ -95,7 +109,7 @@ export default function FridgePage() {
                 return next;
             });
         }
-        setModalMode(modalModes.close);
+        setModalMode(ModalModes.close);
     };
 
     function getRecipeList() {
@@ -118,31 +132,7 @@ export default function FridgePage() {
                 time: "30분",
                 difficulty: "쉬움",
                 imageURL: url,
-            },
-            {
-                name: "레시피 1",
-                time: "30분",
-                difficulty: "쉬움",
-                imageURL: url,
-            },
-            {
-                name: "레시피 1",
-                time: "30분",
-                difficulty: "쉬움",
-                imageURL: url,
-            },
-            {
-                name: "레시피 1",
-                time: "30분",
-                difficulty: "쉬움",
-                imageURL: url,
-            },
-            {
-                name: "레시피 1",
-                time: "30분",
-                difficulty: "쉬움",
-                imageURL: url,
-            },
+            }
         ]);
     }
 
@@ -152,13 +142,13 @@ export default function FridgePage() {
                 <Card>
                     <div className="flex flex-row justify-between items-center">
                         <div className="flex flex-col">
-                            <div className="text-lg font-bold">냉장고 현황</div>
-                            <div className="my-2 text-sm text-gray-600">현재 냉장고에 있는 재료들을 확인하세요</div>
+                            <Title>냉장고 현황</Title>
+                            <SubTitle>현재 냉장고에 있는 재료들을 확인하세요</SubTitle>
                         </div>
                         <Button handleClick={() => {
                             setCurrentIngredient(new Ingredient());
                             setScanner(new ImageScanner());
-                            setModalMode(modalModes.add); // 추가 모드
+                            setModalMode(ModalModes.add); // 추가 모드
                         }}>식재료 추가</Button>
                     </div>
                     <div className="flex flex-col gap-2">
@@ -177,12 +167,72 @@ export default function FridgePage() {
                                     setCurrentIngredient(each); // 기존 데이터 로드
                                     setScanner(new ImageScanner()); // 스캐너 초기화
                                     setEditIdx(idx); // 인덱스 저장
-                                    setModalMode(modalModes.edit); // 수정 모드
+                                    setModalMode(ModalModes.edit); // 수정 모드
                                 }}
                             />
                         ))}
                     </div>
                 </Card>
+
+                {/*냉동 재료  */}
+                <Card>
+                    <div className="flex flex-col">
+                        <Title>냉동 재료</Title>
+                        <SubTitle>현재 냉장고에 있는 재료들 중 냉동 재료들 입니다.</SubTitle>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        {storage.map((each, idx) => (
+                            <IngredientComponent
+                                key={idx}
+                                name={each.name}
+                                description="식재료 메모"
+                                expires={each.expire}
+                                qty={each.qty}
+                                handleClickDelete={() => {
+                                    setStorage(prev => prev.filter((_, i) => i !== idx));
+                                }}
+                                handleClickEdit={() => {
+                                    setCurrentIngredient(each); // 기존 데이터 로드
+                                    setScanner(new ImageScanner()); // 스캐너 초기화
+                                    setEditIdx(idx); // 인덱스 저장
+                                    setModalMode(ModalModes.edit); // 수정 모드
+                                }}
+                            />
+                        ))}
+                    </div>
+
+                </Card>
+
+                {/*냉장 재료  */}
+                <Card>
+                    <div className="flex flex-col">
+                        <Title>냉장 재료</Title>
+                        <SubTitle>현재 냉장고에 있는 재료들 중 냉장 재료들 입니다.</SubTitle>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        
+                        {storage.map((each, idx) => (
+                            <IngredientComponent
+                                key={idx}
+                                name={each.name}
+                                description="식재료 메모"
+                                expires={each.expire}
+                                qty={each.qty}
+                                handleClickDelete={() => {
+                                    setStorage(prev => prev.filter((_, i) => i !== idx));
+                                }}
+                                handleClickEdit={() => {
+                                    setCurrentIngredient(each); // 기존 데이터 로드
+                                    setScanner(new ImageScanner()); // 스캐너 초기화
+                                    setEditIdx(idx); // 인덱스 저장
+                                    setModalMode(ModalModes.edit); // 수정 모드
+                                }}
+                            />
+                        ))}
+                    </div>
+                </Card>
+
 
                 <Card>
                     <div className="text-lg font-bold mb-6">추천 레시피</div>
@@ -198,13 +248,16 @@ export default function FridgePage() {
                         ))}
                     </div>
                 </Card>
+                
+
+
 
                 <Modal 
-                    title={modalMode === modalModes.add ? "재료 추가" : "재료 수정"}
-                    isOpen={modalMode !== modalModes.close}
-                    onClose={() => setModalMode(modalModes.close)}
+                    title={modalMode === ModalModes.add ? "재료 추가" : "재료 수정"}
+                    isOpen={modalMode !== ModalModes.close}
+                    onClose={() => setModalMode(ModalModes.close)}
                     onConfirm={handleConfirm}
-                    confirmText={modalMode === modalModes.add ? "추가" : "수정"}>
+                    confirmText={modalMode === ModalModes.add ? "추가" : "수정"}>
                     <div className="flex flex-col gap-4">
                         {scanner.previewUrl ? (
                             <div className="w-full overflow-hidden rounded-2xl relative bg-gray-100 flex flex-col">

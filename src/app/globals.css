@@ -55,7 +55,7 @@ img {
 
 }
 .themeSecondary {
-    background-color: white;
+    background-color: var(--bg);
     color: var(--text-sub);
     border: 1px solid var(--border);
 }
