@@ -102,6 +102,7 @@ export default function FridgePage() {
     const fileInputRef = useRef(null);
     
     const [storage, setStorage] = useState([]);
+    const [summary, setSummary] = useState(null);
     const [currentIngredient, setCurrentIngredient] = useState(new Ingredient());
     const [scanner, setScanner] = useState(new ImageScanner());
 
@@ -109,7 +110,7 @@ export default function FridgePage() {
 
     const RecipeList = getRecipeList();
 
-    // 초기 로드: 백엔드에서 식재료 목록 조회
+    // 초기 로드: 백엔드에서 식재료 목록 + 요약 조회
     const fetchIngredients = useCallback(async () => {
         try {
             const res = await fridgeApi.getIngredients();
@@ -120,9 +121,19 @@ export default function FridgePage() {
         }
     }, []);
 
+    const fetchSummary = useCallback(async () => {
+        try {
+            const res = await fridgeApi.getSummary();
+            setSummary(res.data?.data ?? null);
+        } catch (err) {
+            console.error("냉장고 요약 조회 실패:", err);
+        }
+    }, []);
+
     useEffect(() => {
         fetchIngredients();
-    }, [fetchIngredients]);
+        fetchSummary();
+    }, [fetchIngredients, fetchSummary]);
 
     // 이미지 파일 변경 시 미리보기 생성
     useEffect(() => {
@@ -155,7 +166,8 @@ export default function FridgePage() {
             } else if (modalMode === ModalModes.edit && editIdx !== null) {
                 await fridgeApi.updateIngredient(currentIngredient.id, dto);
             }
-            await fetchIngredients(); // 서버 최신 상태 반영
+            await fetchIngredients();
+            await fetchSummary();
         } catch (err) {
             console.error("식재료 저장 실패:", err);
         }
@@ -166,6 +178,7 @@ export default function FridgePage() {
         try {
             await fridgeApi.deleteIngredient(ingredient.id);
             await fetchIngredients();
+            await fetchSummary();
         } catch (err) {
             console.error("식재료 삭제 실패:", err);
         }
@@ -214,11 +227,19 @@ export default function FridgePage() {
                         <Button handleClick={() => {
                             setCurrentIngredient(new Ingredient());
                             setScanner(new ImageScanner());
-                            setModalMode(ModalModes.add); // 추가 모드
+                            setModalMode(ModalModes.add);
                         }}>식재료 추가</Button>
                     </div>
+                    {/* 신선도 요약 통계 (규정: 신선도규칙_확정표_초안.md §요약집계) */}
+                    {summary && (
+                        <div className="flex flex-row gap-4 mb-4 text-sm">
+                            <span>전체 <strong>{summary.totalCount}</strong></span>
+                            <span className="text-green-600">신선 <strong>{summary.freshCount}</strong></span>
+                            <span className="text-orange-500">임박 <strong>{summary.soonCount}</strong></span>
+                            <span className="text-red-500">만료 <strong>{summary.expiredCount}</strong></span>
+                        </div>
+                    )}
                     <div className="flex flex-col gap-2">
-                        {/* 모든 재료 표시 */}
                         {storage.map((each, idx) => (
                             <IngredientComponent
                                 key={each.id ?? idx}
@@ -227,6 +248,7 @@ export default function FridgePage() {
                                 expires={each.expire}
                                 qty={each.qty}
                                 storageType={StorageType2Kor[each.storageType]}
+                                freshnessStatus={each.freshnessStatus}
                                 handleClickDelete={() => handleClickDelete(each)}
                                 handleClickEdit={() => {
                                     setCurrentIngredient(each);
@@ -257,6 +279,7 @@ export default function FridgePage() {
                                         expires={each.expire}
                                         qty={each.qty}
                                         storageType={StorageType2Kor[each.storageType]}
+                                        freshnessStatus={each.freshnessStatus}
                                         handleClickDelete={() => handleClickDelete(each)}
                                         handleClickEdit={() => {
                                             setCurrentIngredient(each);
