@@ -248,11 +248,40 @@ export default function FridgePage() {
                     </div>
                     {/* 신선도 요약 통계 (규정: 신선도규칙_확정표_초안.md §요약집계) */}
                     {summary && (
-                        <div className="flex flex-row gap-4 mb-4 text-sm">
-                            <span>전체 <strong>{summary.totalCount}</strong></span>
-                            <span className="text-green-600">신선 <strong>{summary.freshCount}</strong></span>
-                            <span className="text-orange-500">임박 <strong>{summary.soonCount}</strong></span>
-                            <span className="text-red-500">만료 <strong>{summary.expiredCount}</strong></span>
+                        <div className="mb-4">
+                            <div className="flex flex-row gap-4 mb-3 text-sm">
+                                <span>전체 <strong>{summary.totalCount}</strong></span>
+                                <span className="text-green-600">신선 <strong>{summary.freshCount}</strong></span>
+                                <span className="text-orange-500">임박 <strong>{summary.soonCount}</strong></span>
+                                <span className="text-red-500">만료 <strong>{summary.expiredCount}</strong></span>
+                            </div>
+                            {summary.soonItems && summary.soonItems.length > 0 && (
+                                <div className="rounded-xl p-3 text-sm" style={{ backgroundColor: "var(--card-bg)", border: "1px solid #f97316" }}>
+                                    <div className="font-semibold text-orange-500 mb-2">⚠ 유통기한 임박 재료</div>
+                                    <div className="flex flex-col gap-1">
+                                        {summary.soonItems.map((item) => {
+                                            const ingredient = storage.find(s => s.id === item.ingredientId);
+                                            return (
+                                                <div
+                                                    key={item.ingredientId}
+                                                    className="flex flex-row justify-between items-center cursor-pointer hover:opacity-70 rounded px-1 py-0.5 transition-opacity"
+                                                    onClick={() => {
+                                                        if (ingredient) {
+                                                            setCurrentIngredient(ingredient);
+                                                            setScanner(new ImageScanner());
+                                                            setEditIdx(storage.indexOf(ingredient));
+                                                            setModalMode(ModalModes.edit);
+                                                        }
+                                                    }}
+                                                >
+                                                    <span className="font-medium">{item.name}</span>
+                                                    <span className="text-orange-400 text-xs">{item.expirationDate} 까지</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                     <div className="flex flex-col gap-2">
