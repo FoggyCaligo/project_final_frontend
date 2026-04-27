@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import Section from "@/components/ui/Section";
-import RecommendationCard from "./components/RecommendationCard";
+import Recipe from "@/components/ui/Recipe";
 import { getRecommendations } from "@/api/recommendApi";
 
 export default function RecommendationsPage() {
-
     const [recipes, setRecipes] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -25,25 +24,43 @@ export default function RecommendationsPage() {
 
         fetchRecommendations();
     }, []);
+
     if (loading) {
-        return <PrivateLayout><Section>추천 불러오는 중...</Section></PrivateLayout>
+        return (
+            <PrivateLayout>
+                <Section>추천 불러오는 중...</Section>
+            </PrivateLayout>
+        );
     }
 
     if (!recipes.length) {
-        return <PrivateLayout><Section>추천 결과가 없습니다.</Section></PrivateLayout>
+        return (
+            <PrivateLayout>
+                <Section>추천 결과가 없습니다.</Section>
+            </PrivateLayout>
+        );
     }
+
     return (
         <PrivateLayout>
             <Section>
-                <div className="grid gap-4">
-                    {recipes.map(recipe => (
-                        <RecommendationCard
+                <div className="grid gap-4 md:grid-cols-3">
+                    {recipes.map((recipe) => (
+                        <Recipe
                             key={recipe.recipeId}
-                            recipe={recipe}
+                            name={recipe.title}
+                            time={recipe.cookTime || "정보 없음"}
+                            difficulty={recipe.difficulty || "보통"}
+                            imageURL={recipe.thumbnailUrl}
+                            variant="recommend"
+                            matchRate={recipe.matchRate}
+                            reason={recipe.reason}
+                            conditionTags={recipe.conditionTags}
+                            missingIngredients={recipe.missingIngredients}
                         />
                     ))}
                 </div>
             </Section>
         </PrivateLayout>
-    )
+    );
 }
