@@ -168,6 +168,7 @@ export default function FridgePage() {
                                 description="식재료 메모"
                                 expires={each.expire}
                                 qty={each.qty}
+                                storageType={StorageType2Kor[each.storageType]}
                                 handleClickDelete={() => {
                                     setStorage(prev => prev.filter((_, i) => i !== idx));
                                 }}
@@ -198,6 +199,7 @@ export default function FridgePage() {
                                     description="식재료 메모"
                                     expires={each.expire}
                                     qty={each.qty}
+                                    storageType={StorageType2Kor[each.storageType]}
                                     handleClickDelete={() => {
                                         setStorage(prev => prev.filter((_, i) => i !== idx));
                                     }}
@@ -230,6 +232,7 @@ export default function FridgePage() {
                                     description="식재료 메모"
                                     expires={each.expire}
                                     qty={each.qty}
+                                    storageType={StorageType2Kor[each.storageType]}
                                     handleClickDelete={() => {
                                         setStorage(prev => prev.filter((_, i) => i !== idx));
                                     }}
