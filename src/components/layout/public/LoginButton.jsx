@@ -69,6 +69,7 @@ export default function LoginButton() {
                 title="로그인"
                 onClose={handleClose}
                 showFooter={false}
+                variant="login"
             >
                 <div className="flex flex-col gap-4">
                     {emailVerifiedMsg && (

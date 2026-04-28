@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import Button from "./Button";
 
 export default function Modal({
@@ -14,6 +15,7 @@ export default function Modal({
     cancelText = "취소",
     showFooter = true,
     closeOnOverlay = true,
+    variant = "default",
 }) {
     useEffect(() => {
         if (!isOpen) return;
@@ -35,9 +37,12 @@ export default function Modal({
 
     if (!isOpen) return null;
 
+    const isLogin = variant === "login";
+
     const base = {
-        overlay: "fixed inset-0 z-50 flex items-center justify-center px-4 py-6",
-        panel: "relative w-full max-w-[560px] overflow-hidden rounded-[20px] border bg-white shadow-lg",
+        overlay: isLogin ? "login-overlay" : "fixed inset-0 z-[9999] overflow-y-auto",
+        inner: isLogin ? "login-inner" : "flex min-h-full items-center justify-center px-4 py-8",
+        panel: "relative w-full max-w-[560px] rounded-[20px] border bg-white shadow-lg",
         header: "flex items-start justify-between gap-4 border-b px-6 py-5",
         body: "px-6 py-5",
         footer: "flex justify-end gap-3 border-t px-6 py-4",
@@ -78,12 +83,13 @@ export default function Modal({
         }
     };
 
-    return (
+    return createPortal(
         <div
             className={base.overlay}
             style={inlineStyle.overlay}
             onClick={handleOverlayClick}
         >
+            <div className={base.inner}>
             <div
                 className={base.panel}
                 style={inlineStyle.panel}
@@ -135,6 +141,8 @@ export default function Modal({
                     </div>
                 )}
             </div>
-        </div>
+            </div>
+        </div>,
+        document.body
     );
-}
+}
