@@ -7,9 +7,10 @@ import InputText from '@/components/ui/InputText';
 import CustomTag from '@/components/ui/Tag';
 import Section from '@/components/ui/Section';
 import PostCard from '@/app/community/components/PostCard';
+import { getBookmarkedRecipes } from '@/api/bookmarkApi';
 
-// 방금 만든 API 모듈 import
-import { uploadImages, createPost } from '@/api/postApi';
+// 💡 중복을 제거하고 하나의 import 문으로 합쳤습니다.
+import { uploadImages, createPost, getUserPosts } from '@/api/postApi';
 
 export default function CommunityRegisterPage() {
     const [images, setImages] = useState([]);
@@ -17,15 +18,47 @@ export default function CommunityRegisterPage() {
     const fileInputRef = useRef(null);
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
-    // state 초기값도 숫자로 변경 (부추전의 ID가 1번이라고 가정)
-    const [recipe, setRecipe] = useState("1");
+    const [recipe, setRecipe] = useState(""); // 선택된 레시피 ID
+    const [bookmarkedRecipes, setBookmarkedRecipes] = useState([]); // 서버에서 받아온 목록
+    const [recentPosts, setRecentPosts] = useState([]); // 최근 후기 상태
+    
+    // 현재 임시로 사용하는 로그인 유저 ID (추후 전역 상태나 토큰에서 가져오게 수정)
+    const currentUserId = 1;
     const router = useRouter();
-
+    
     useEffect(() => {
+        // 통합 데이터 로드 함수 (북마크 & 유저 작성 게시글)
+        const fetchInitialData = async () => {
+            try {
+                // 1. 북마크 데이터 로드
+                const bookmarkData = await getBookmarkedRecipes(currentUserId);
+                setBookmarkedRecipes(bookmarkData);
+                if (bookmarkData && bookmarkData.length > 0) {
+                    setRecipe(bookmarkData[0].recipeId.toString());
+                }
+    
+                // 2. 최근 작성 게시글 데이터 로드
+                const postData = await getUserPosts(currentUserId);
+                setRecentPosts(postData);
+            } catch (error) {
+                console.error("초기 데이터를 불러오지 못했습니다.", error);
+            }
+        };
+    
+        fetchInitialData();
+    
         return () => {
             images.forEach(img => URL.revokeObjectURL(img.preview));
         };
     }, []);
+    
+    // DB의 storage_path와 stored_name을 조합하여 웹 URL을 생성하는 유틸 함수
+    const getImageUrl = (storagePath, storedName) => {
+        if (!storedName) return placeholderSvg;
+        
+        // PHP 서버 웹 루트가 /var/www/html/ 이라면 아래와 같이 URL 매핑
+        return `http://43.201.1.45/uploads/community/${storedName}`;
+    };
 
     const processFiles = (files) => {
         const validExtensions = ['image/jpeg', 'image/png', 'image/webp'];
@@ -50,9 +83,7 @@ export default function CommunityRegisterPage() {
         }
 
         try {
-            // ==========================================
             // Step 1. PHP 서버로 이미지 업로드 요청
-            // ==========================================
             const formData = new FormData();
             formData.append('title', title);
             formData.append('content', content);
@@ -68,9 +99,7 @@ export default function CommunityRegisterPage() {
             if (uploadResult.success) {
                 console.log(`[Upload Success] ${uploadResult.uploaded_count}개의 이미지 업로드 완료`);
 
-                // ==========================================
                 // Step 2. Spring Boot 서버로 메타데이터 및 게시글 정보 전송
-                // ==========================================
                 const finalPostData = {
                     userId: 1, // 테스트용 임시 유저 ID
                     title: title,
@@ -85,7 +114,15 @@ export default function CommunityRegisterPage() {
                 if (dbResult.success) {
                     console.log("[Submit Success] 게시글 등록이 완벽하게 처리되었습니다!");
                     alert("게시글이 성공적으로 등록되었습니다.");
-                    // router.push('/community');
+                    
+                    // 💡 등록 완료 후 최신 상태를 반영하기 위해 리스트 다시 불러오기
+                    const postData = await getUserPosts(currentUserId);
+                    setRecentPosts(postData);
+                    
+                    // 입력 폼 초기화 (선택 사항)
+                    setTitle("");
+                    setContent("");
+                    removeAllImages();
                 }
             } else {
                 console.error("[Upload Error] 서버 반환 에러:", uploadResult.error);
@@ -150,7 +187,7 @@ export default function CommunityRegisterPage() {
         <main className="w-full">
             <Section>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-                    {/* 후기 작성 폼 (생략 없이 유지) */}
+                    {/* 후기 작성 폼 */}
                     <Card style={{ margin: 0, padding: '24px' }}>
                         <h1 className="text-xl font-bold mb-2">후기 작성</h1>
                         <p className="text-sm text-[var(--text-sub)] mb-5">
@@ -164,10 +201,17 @@ export default function CommunityRegisterPage() {
                                 value={recipe}
                                 onChange={(e) => setRecipe(e.target.value)}
                             >
-                                {/* value에 DB의 실제 recipe_id 숫자가 필요함 */}
-                                <option value="1">부추전</option>
-                                <option value="2">감자채 볶음</option>
-                                <option value="3">된장찌개</option>
+                                {bookmarkedRecipes.length > 0 ? (
+                                    bookmarkedRecipes.map((item) => (
+                                        <option key={item.recipeId} value={item.recipeId}>
+                                            {item.recipeName}
+                                        </option>
+                                    ))
+                                ) : (
+                                    <option value="" disabled>
+                                        북마크한 레시피가 없습니다
+                                    </option>
+                                )}
                             </select>
                         </div>
 
@@ -226,7 +270,7 @@ export default function CommunityRegisterPage() {
                         </div>
                     </Card>
 
-                    {/* 업로드 미리보기 (생략 없이 유지) */}
+                    {/* 업로드 미리보기 */}
                     <Card style={{ margin: 0, padding: '24px' }}>
                         <h2 className="text-xl font-bold mb-4">
                             업로드 미리보기 <span className="text-sm font-normal text-[var(--text-sub)]">({images.length}/5)</span>
@@ -269,30 +313,35 @@ export default function CommunityRegisterPage() {
                     </Card>
                 </div>
 
-                {/* 최근 후기 목록 섹션 (생략 없이 유지) */}
+                {/* 2. 최근 후기 목록 섹션 */}
                 <div className="flex items-end justify-between gap-4 mb-5 px-2">
                     <div>
                         <h2 className="text-2xl font-bold m-0">최근 후기</h2>
-                        <p className="text-[var(--text-sub)] mt-2 m-0">현재 공개 사이트의 소셜 화면처럼 작성 폼과 목록을 한 페이지에 함께 배치했습니다.</p>
+                        <p className="text-[var(--text-sub)] mt-2 m-0">내가 작성한 최근 레시피 후기 목록입니다.</p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <PostCard
-                        title="부추전 성공!"
-                        author="test3"
-                        date="2026-04-22 08:15"
-                        category="부추전"
-                        desc="레시피대로 했더니 정말 간단하게 완성됐어요. 청양고추를 추가하니 더 맛있었습니다."
-                        imageSrc={placeholderSvg}
-                    />
-                    <PostCard
-                        title="된장찌개 끓였어요"
-                        author="caligo"
-                        date="2026-04-21 19:42"
-                        category="된장찌개"
-                        desc="집에 있던 두부와 애호박으로 금방 만들 수 있었습니다. 부족했던 대파는 링크 타고 장봤어요."
-                    />
+                    {/* 배열 순회를 통해 PostCard 동적 생성 */}
+                    {recentPosts.length > 0 ? (
+                        recentPosts.map((post, index) => (
+                            <PostCard
+                                key={index}
+                                title={post.title}
+                                author={post.author}
+                                date={new Date(post.date).toLocaleString('ko-KR', {
+                                    year: 'numeric', month: '2-digit', day: '2-digit',
+                                    hour: '2-digit', minute: '2-digit'
+                                })}
+                                desc={post.desc}
+                                imageSrc={getImageUrl(post.storagePath, post.storedName)}
+                            />
+                        ))
+                    ) : (
+                        <div className="col-span-1 md:col-span-2 text-center py-10 text-[var(--text-sub)] border border-dashed rounded-xl border-[var(--border)]">
+                            등록된 후기가 없습니다. 첫 후기를 작성해 보세요!
+                        </div>
+                    )}
                 </div>
             </Section>
         </main>
