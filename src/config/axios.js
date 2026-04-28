@@ -10,10 +10,8 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = getAccessToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // 서버가 HTTP-only 쿠키(accessToken)로 인증하므로 Authorization 헤더 불필요
+    // withCredentials: true 설정으로 쿠키가 자동으로 전송됨
     config.headers["X-User-Id"] = "2"; // 백엔드1 임시 인증용 헤더 (개발용)
     return config;
   },
