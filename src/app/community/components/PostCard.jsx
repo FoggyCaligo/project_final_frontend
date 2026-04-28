@@ -1,8 +1,12 @@
+"use client"; // 💡 Next.js 훅을 사용하기 위해 최상단에 추가
 import React from 'react';
+import { useRouter } from 'next/navigation'; // 💡 useRouter 불러오기
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
 export default function PostCard({ title, author, date, category, imageSrc, desc, altText }) {
+    const router = useRouter(); // 💡 라우터 객체 생성
+
     return (
         <Card style={{ margin: 0, padding: '24px' }}>
             <div className="flex items-center justify-between gap-3 mb-3">
@@ -18,7 +22,10 @@ export default function PostCard({ title, author, date, category, imageSrc, desc
                 {desc}
             </p>
             <div className="flex flex-wrap gap-2 mt-5">
-                <Button variant="primary" handleClick={() => window.location.href = '/community/detail'}>상세 보기</Button>
+                {/* 💡 window.location.href 대신 router.push 사용 */}
+                <Button variant="primary" handleClick={() => router.push('/community/detail')}>
+                    상세 보기
+                </Button>
                 <Button variant="secondary">좋아요</Button>
                 <Button variant="secondary">신고</Button>
             </div>
