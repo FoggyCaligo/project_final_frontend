@@ -40,7 +40,7 @@ export default function LogoutButton() {
     if (user.loginType === "kakao") {
         return (
             <div className="flex items-center gap-3">
-                <span className="text-sm text-[var(--text-sub)]">{user.loginId}</span>
+                <span className="text-sm text-[var(--text-sub)]">{user.nickname}</span>
                 <Button variant="secondary" handleClick={handleKakaoLogout}>
                     카카오 로그아웃
                 </Button>
@@ -50,7 +50,7 @@ export default function LogoutButton() {
 
     return (
         <div className="flex items-center gap-3">
-            <span className="text-sm text-[var(--text-sub)]">{user.loginId}</span>
+            <span className="text-sm text-[var(--text-sub)]">{user.nickname}</span>
             <Button variant="secondary" handleClick={handleGeneralLogout}>
                 로그아웃
             </Button>
