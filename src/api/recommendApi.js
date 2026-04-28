@@ -4,5 +4,5 @@ export const getRecommendations = async () => {
     const response =
         await api.get("/recipes/recommendations");
 
-    return response.data;
+    return response.data.data;
 };

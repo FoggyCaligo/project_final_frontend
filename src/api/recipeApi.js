@@ -2,7 +2,7 @@ import api from "@/config/axios";
 
 export const getAllRecipes = async () => {
     const response = await api.get("/recipes");
-    return response.data;
+    return response.data.data;
 };
 
 // export const getRecipeDetail = async (id) => {
