@@ -16,3 +16,6 @@ yarn-error.log*
 
 # mac
 .DS_Store
+
+# AI 에이전트 문서 (개인용)
+.ai/
