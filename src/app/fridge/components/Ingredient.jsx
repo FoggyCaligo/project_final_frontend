@@ -9,14 +9,18 @@ const FRESHNESS_BADGE = {
     FRESH:    null,
 };
 
-export default function Ingredient({ children, variant = "primary", handleClickDelete, handleClickEdit, name, description, expires, qty, storageType, freshnessStatus }) {
+export default function Ingredient({ children, variant = "primary", handleClickDelete, handleClickEdit, name, description, expires, qty, storageType, category, freshnessStatus }) {
     const badge = FRESHNESS_BADGE[freshnessStatus] ?? null;
 
     return (
         <div className="flex flex-row justify-between items-center p-2 rounded-2xl border" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--border)" }}>
             <div className="flex-col ml-4">
                 <div className="text-lg font-bold">{name}</div>
-                <div className="text-sm text-gray-600">{description} {" . "} {expires} {" . "} {storageType} {" . "} {qty}</div>
+                <div className="text-sm text-gray-600">
+                    {description} {" . "} {expires}
+                    {category && <>{" . "}{category}</>}
+                    {" . "} {storageType} {" . "} {qty}
+                </div>
             </div>
             <div className="flex flex-row gap-2 items-center">
 

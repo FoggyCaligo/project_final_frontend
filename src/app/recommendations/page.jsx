@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import Section from "@/components/ui/Section";
 import Recipe from "@/components/ui/Recipe";
 import { getRecommendations } from "@/api/recommendApi";
 
 export default function RecommendationsPage() {
+    const router = useRouter();
+
     const [recipes, setRecipes] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -57,6 +60,7 @@ export default function RecommendationsPage() {
                             reason={recipe.reason}
                             conditionTags={recipe.conditionTags}
                             missingIngredients={recipe.missingIngredients}
+                            handleClick={() => router.push(`/recipes/${recipe.recipeId}`)}
                         />
                     ))}
                 </div>

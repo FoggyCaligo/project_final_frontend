@@ -1,4 +1,12 @@
 import Button from "./Button"
+import CustomTag from "./Tag";
+
+const conditionTagMap = {
+    DIABETES_LOW_SUGAR: { label: "당뇨 주의", variant: "accent" },
+    DIET_LOW_CALORIE: { label: "다이어트 추천", variant: "primary" },
+    BABY_STAGE1: { label: "이유식", variant: "secondary" },
+    ALLERGY_EGG: { label: "계란 알레르기", variant: "accent" },
+}
 
 export default function Recipe({
     name,
@@ -16,7 +24,6 @@ export default function Recipe({
 
     return (
         <div className="w-full overflow-hidden rounded-2xl bg-gray-100 flex flex-col border border-gray-100">
-
             <div className="h-48 overflow-hidden">
                 <img
                     src={imageURL || "/next.svg"}
@@ -26,7 +33,6 @@ export default function Recipe({
             </div>
 
             <div className="flex flex-col gap-2 p-4">
-
                 <div className="text-lg font-bold text-gray-800">
                     {name}
                 </div>
@@ -37,31 +43,52 @@ export default function Recipe({
 
                 {variant === "recommend" && (
                     <>
-                        <div className="mt-2 text-sm font-medium">
+                        <div className="mt-2 text-sm font-medium text-gray-700">
                             재료 일치율 {matchRate}%
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
-                            {conditionTags.map(tag => (
-                                <span
-                                    key={tag}
-                                    className="px-2 py-1 rounded-full text-xs bg-white"
-                                >
-                                    {tag}
-                                </span>
-                            ))}
+                        {conditionTags.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {conditionTags.map(tag => {
+                                    const mapped = conditionTagMap[tag] || {
+                                        label: tag,
+                                        variant: "secondary",
+                                    }
+
+                                    return (
+                                        <CustomTag key={tag} variant={mapped.variant}>
+                                            {mapped.label}
+                                        </CustomTag>
+                                    )
+                                })}
+                            </div>
+                        )}
+
+                        <div className="rounded-xl bg-white p-3 border text-sm">
+                            <div className="mb-2 font-medium text-gray-700">
+                                부족 재료
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                                {missingIngredients.length ? (
+                                    missingIngredients.map((ingredient) => (
+                                        <CustomTag key={ingredient} variant="accent">
+                                            {ingredient}
+                                        </CustomTag>
+                                    ))
+                                ) : (
+                                    <CustomTag variant="primary">
+                                        없음
+                                    </CustomTag>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="text-sm text-gray-600">
-                            부족 재료:
-                            {missingIngredients.length
-                                ? missingIngredients.join(", ")
-                                : " 없음"}
-                        </div>
-
-                        <p className="text-sm text-gray-600">
-                            {reason}
-                        </p>
+                        {reason && (
+                            <div className="rounded-xl bg-white p-3 text-sm text-gray-600 border">
+                                💡 {reason}
+                            </div>
+                        )}
                     </>
                 )}
 
@@ -72,9 +99,7 @@ export default function Recipe({
                 >
                     레시피 보기
                 </Button>
-
             </div>
-
         </div>
     )
 }
