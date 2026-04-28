@@ -23,12 +23,14 @@ src/
 │   └── AuthContext.jsx      (AuthProvider, useAuth 훅)
 ├── app/
 │   ├── layout.js            (RootLayout — AuthProvider 래핑)
-│   └── page.js              (랜딩 페이지)
+│   ├── page.js              (랜딩 페이지)
+│   └── signup/
+│       └── page.jsx         (회원가입 전용 페이지 — 팝업 아닌 독립 페이지)
 ├── components/
 │   ├── layout/
 │   │   ├── public/
 │   │   │   ├── Header.jsx       (상단 헤더 — 로그인 버튼 포함)
-│   │   │   └── LoginButton.jsx  (로그인/회원가입 모달)
+│   │   │   └── LoginButton.jsx  (로그인 전용 모달 — 회원가입 탭 제거, /signup 링크)
 │   │   └── private/
 │   │       └── LogoutButton.jsx (로그아웃 버튼 — 일반/카카오 분기)
 │   └── ui/
@@ -130,7 +132,7 @@ src/
 
 ---
 
-#### 3-4. 신규 구현 / 수정: LoginButton.jsx — 로그인/회원가입 모달
+#### 3-4. 수정: LoginButton.jsx — 로그인 전용 모달 (회원가입 탭 분리)
 
 **파일**: `src/components/layout/public/LoginButton.jsx`
 
@@ -138,15 +140,36 @@ src/
 - `user` 존재 시 (로그인 상태): `<LogoutButton />` 렌더
 - `user` 없을 시 (비로그인): "로그인" 버튼 → 모달 오픈
 
-**모달 탭 구조**:
+**모달 구조 (2026-04-28 변경 — 회원가입 탭 제거)**:
 
-| 탭 | 입력 필드 | 동작 |
-|----|-----------|------|
-| 로그인 | loginId, password (Enter 키 지원) | `loginApi` 호출 → `login(loginId, "general")` → 모달 닫기 |
-| 회원가입 | loginId, email, password, nickname | `signupApi` 호출 → 성공 시 로그인 탭으로 전환 |
+| 요소 | 내용 |
+|------|------|
+| 로그인 폼 | loginId, password (Enter 키 지원), 로그인 버튼 |
+| 카카오 로그인 버튼 | UI 배치 완료, 실제 연동 미구현 |
+| 이메일 인증 완료 메시지 | `?emailVerified=true` 쿼리 파라미터 감지 시 초록색 안내 표시 |
+| 하단 링크 | "계정이 없으신가요? **회원가입**" → `/signup` 페이지 이동 |
 
-- 카카오 로그인 버튼: UI 배치 완료, 실제 연동은 팀 계정 발급 후 구현 예정
-- 에러 메시지: 각 탭 내 인라인 표시
+> ✅ 회원가입은 `/signup` 전용 페이지로 분리. 모달은 로그인 전용.
+
+---
+
+#### 3-9. 신규 구현: SignupPage — /signup 독립 회원가입 페이지 [2026-04-28]
+
+**파일**: `src/app/signup/page.jsx`
+
+**폼 필드**: loginId (중복확인 포함), email, password, nickname
+
+**흐름**:
+1. 아이디 중복확인 → `checkLoginIdApi` 호출
+2. 가입 제출 → `signupApi` 호출
+3. 성공 시 이메일 인증 안내 화면으로 전환 (폼 숨김, 안내 메시지 표시)
+4. 안내 메시지: 발송 이메일 주소 표시 + "인증 링크는 24시간 동안 유효합니다"
+5. "로그인하러 가기" 버튼 → `/` (홈) 이동
+
+**이메일 인증 흐름 (서버 연동)**:
+- 가입 시 서버가 이메일로 인증 링크 발송 (`GET /api/v1/auth/verify-email?token=xxx`)
+- 링크 클릭 → 서버에서 인증 처리 → `http://localhost:3000?emailVerified=true` 리다이렉트
+- 홈 로드 시 `LoginButton`이 `?emailVerified=true` 감지 → 초록색 안내 메시지 표시
 
 ---
 
