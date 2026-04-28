@@ -1,4 +1,4 @@
-import { loginApi, logoutApi, signupApi, findLoginIdApi } from '@/api/authApi';
+import { loginApi, logoutApi, signupApi, checkLoginIdApi, getMeApi, findLoginIdApi } from '@/api/authApi';
 import api from '@/config/axios';
 
 jest.mock('@/config/axios', () => ({
@@ -44,9 +44,9 @@ describe('authApi', () => {
     expect(api.post).toHaveBeenCalledWith('/v1/auth/logout');
   });
 
-  // ===== signupApi =====
+  // ===== signupApi (경로 변경: /v1/users/signup → /v1/auth/signup) =====
 
-  test('signupApi: POST /v1/users/signup 에 모든 필드를 전송한다', async () => {
+  test('signupApi: POST /v1/auth/signup 에 모든 필드를 전송한다', async () => {
     api.post.mockResolvedValue({ data: { success: true, data: null } });
 
     await signupApi({
@@ -56,7 +56,7 @@ describe('authApi', () => {
       nickname: '새유저',
     });
 
-    expect(api.post).toHaveBeenCalledWith('/v1/users/signup', {
+    expect(api.post).toHaveBeenCalledWith('/v1/auth/signup', {
       loginId: 'newuser1',
       email: 'new@example.com',
       password: 'Test1234!',
@@ -71,6 +71,44 @@ describe('authApi', () => {
     await expect(
       signupApi({ loginId: 'dup', email: 'dup@example.com', password: 'T1!', nickname: '닉' })
     ).rejects.toEqual(error);
+  });
+
+  // ===== checkLoginIdApi (신규) =====
+
+  test('checkLoginIdApi: GET /v1/auth/check-login-id 에 loginId를 params로 전송한다', async () => {
+    api.get.mockResolvedValue({ data: { success: true, data: { available: true } } });
+
+    await checkLoginIdApi('newuser');
+
+    expect(api.get).toHaveBeenCalledWith('/v1/auth/check-login-id', {
+      params: { loginId: 'newuser' },
+    });
+  });
+
+  test('checkLoginIdApi: 이미 존재하는 아이디 시 available:false를 반환한다', async () => {
+    api.get.mockResolvedValue({ data: { success: true, data: { available: false } } });
+
+    const res = await checkLoginIdApi('existing');
+
+    expect(res.data.data.available).toBe(false);
+  });
+
+  // ===== getMeApi (신규) =====
+
+  test('getMeApi: GET /v1/auth/me 를 호출한다', async () => {
+    api.get.mockResolvedValue({ data: { success: true, data: { loginId: 'testuser1' } } });
+
+    const res = await getMeApi();
+
+    expect(api.get).toHaveBeenCalledWith('/v1/auth/me');
+    expect(res.data.data.loginId).toBe('testuser1');
+  });
+
+  test('getMeApi: 인증 없이 호출 시 reject된 Promise를 반환한다', async () => {
+    const error = { message: '인증이 필요합니다.', status: 401 };
+    api.get.mockRejectedValue(error);
+
+    await expect(getMeApi()).rejects.toEqual(error);
   });
 
   // ===== findLoginIdApi =====

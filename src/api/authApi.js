@@ -8,9 +8,17 @@ export const loginApi = (loginId, password) =>
 export const logoutApi = () =>
     api.post("/v1/auth/logout");
 
-// POST /api/v1/users/signup — 회원가입
+// POST /api/v1/auth/signup — 회원가입 (팀 공식 스펙: /auth/signup)
 export const signupApi = ({ loginId, email, password, nickname }) =>
-    api.post("/v1/users/signup", { loginId, email, password, nickname });
+    api.post("/v1/auth/signup", { loginId, email, password, nickname });
+
+// GET /api/v1/auth/check-login-id — 아이디 중복 확인 (팀 공식 스펙 신규)
+export const checkLoginIdApi = (loginId) =>
+    api.get("/v1/auth/check-login-id", { params: { loginId } });
+
+// GET /api/v1/auth/me — 현재 인증된 사용자 조회 (팀 공식 스펙 신규)
+export const getMeApi = () =>
+    api.get("/v1/auth/me");
 
 // GET /api/v1/users/find-loginid?email= — 이메일로 아이디 찾기
 export const findLoginIdApi = (email) =>

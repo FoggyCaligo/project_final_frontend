@@ -45,13 +45,13 @@ src/
 
 | 구분 | 팀 공식 경로 | 현행 authApi.js 경로 | 상태 |
 |------|------------|------------------|------|
-| 로그인 | `POST /api/v1/auth/login` | `POST /v1/auth/login` | ⚠️ baseURL `/api` 포함 시 정상 — 확인 필요 |
-| 로그아웃 | `POST /api/v1/auth/logout` | `POST /v1/auth/logout` | ⚠️ 동일 |
-| 회원가입 | `POST /api/v1/auth/signup` | `POST /v1/users/signup` | ⚠️ 경로 불일치 — 서버 변경 완료 후 수정 필요 |
+| 로그인 | `POST /api/v1/auth/login` | `POST /v1/auth/login` | ✅ baseURL `/api` 포함 시 정상 |
+| 로그아웃 | `POST /api/v1/auth/logout` | `POST /v1/auth/logout` | ✅ |
+| 회원가입 | `POST /api/v1/auth/signup` | `POST /v1/auth/signup` | ✅ 경로 수정 완료 |
 | CSRF 토큰 발급 | `GET /api/v1/auth/csrf-token` | 미구현 | ❌ |
-| 아이디 중복 확인 | `GET /api/v1/auth/check-login-id` | 미구현 | ❌ |
+| 아이디 중복 확인 | `GET /api/v1/auth/check-login-id` | `GET /v1/auth/check-login-id` | ✅ 구현 완료 |
 | Refresh Token 재발급 | `POST /api/v1/auth/refresh` | 미구현 | ❌ |
-| 현재 사용자 조회 | `GET /api/v1/auth/me` | 미구현 | ❌ |
+| 현재 사용자 조회 | `GET /api/v1/auth/me` | `GET /v1/auth/me` | ✅ 구현 완료 |
 | 아이디 찾기 | (팀 스펙 미포함) | `GET /v1/users/find-loginid` | ℹ️ 팀 재확인 필요 |
 
 > **참고**: Axios baseURL이 `/api`이므로 authApi.js의 `/v1/auth/login` 호출 시 실제 경로는 `/api/v1/auth/login`. 서버 경로와 일치.

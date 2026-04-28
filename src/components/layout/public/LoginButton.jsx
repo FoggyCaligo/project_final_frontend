@@ -4,7 +4,7 @@ import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useAuth } from "@/context/AuthContext";
-import { loginApi, signupApi } from "@/api/authApi";
+import { loginApi, signupApi, checkLoginIdApi } from "@/api/authApi";
 import LogoutButton from "@/components/layout/private/LogoutButton";
 
 // 인증 상태에 따라 로그인 버튼 또는 로그아웃 버튼을 렌더링
@@ -27,12 +27,16 @@ export default function LoginButton() {
     const [signupEmail, setSignupEmail] = useState("");
     const [signupPassword, setSignupPassword] = useState("");
     const [signupNickname, setSignupNickname] = useState("");
+    // 아이디 중복 확인 상태
+    const [loginIdChecked, setLoginIdChecked] = useState(false);
+    const [loginIdAvailable, setLoginIdAvailable] = useState(false);
 
     const resetForms = () => {
         setLoginId(""); setPassword("");
         setSignupLoginId(""); setSignupEmail("");
         setSignupPassword(""); setSignupNickname("");
         setError("");
+        setLoginIdChecked(false); setLoginIdAvailable(false);
     };
 
     const handleClose = () => {
@@ -62,11 +66,35 @@ export default function LoginButton() {
         alert("카카오 로그인은 준비 중입니다.");
     };
 
+    // 아이디 중복 확인
+    const handleCheckLoginId = async () => {
+        setError("");
+        if (!signupLoginId) {
+            setError("아이디를 입력해주세요.");
+            return;
+        }
+        try {
+            const res = await checkLoginIdApi(signupLoginId);
+            const available = res.data?.data?.available;
+            setLoginIdChecked(true);
+            setLoginIdAvailable(available);
+            if (!available) {
+                setError("이미 사용 중인 아이디입니다.");
+            }
+        } catch (err) {
+            setError(err.message || "아이디 확인에 실패했습니다.");
+        }
+    };
+
     // 회원가입 제출
     const handleSignup = async () => {
         setError("");
         if (!signupLoginId || !signupEmail || !signupPassword || !signupNickname) {
             setError("모든 항목을 입력해주세요.");
+            return;
+        }
+        if (!loginIdChecked || !loginIdAvailable) {
+            setError("아이디 중복 확인을 해주세요.");
             return;
         }
         try {
@@ -163,13 +191,25 @@ export default function LoginButton() {
                     </div>
                 ) : (
                     <div className="flex flex-col gap-4">
-                        <input
-                            type="text"
-                            placeholder="아이디 (4~20자, 영문/숫자/_)"
-                            value={signupLoginId}
-                            onChange={(e) => setSignupLoginId(e.target.value)}
-                            className="w-full rounded-lg border border-[var(--border)] px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-[var(--primary)]"
-                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                placeholder="아이디 (4~20자, 영문/숫자/_)"
+                                value={signupLoginId}
+                                onChange={(e) => { setSignupLoginId(e.target.value); setLoginIdChecked(false); setLoginIdAvailable(false); }}
+                                className="flex-1 rounded-lg border border-[var(--border)] px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleCheckLoginId}
+                                className="shrink-0 rounded-lg bg-[var(--primary)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                            >
+                                중복확인
+                            </button>
+                        </div>
+                        {loginIdChecked && loginIdAvailable && (
+                            <p className="text-xs text-green-600">사용 가능한 아이디입니다.</p>
+                        )}
                         <input
                             type="email"
                             placeholder="이메일"
