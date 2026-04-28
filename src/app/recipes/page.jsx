@@ -5,9 +5,10 @@ import { getAllRecipes } from "@/api/recipeApi";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import Section from "@/components/ui/Section";
 import Recipe from "@/components/ui/Recipe";
+import { useRouter } from "next/navigation";
 
 export default function RecipesPage() {
-
+    const router = useRouter();
     const [recipes, setRecipes] = useState([]);
 
     useEffect(() => {
@@ -29,6 +30,10 @@ export default function RecipesPage() {
                             name={recipe.title}
                             time={recipe.cookTime}
                             difficulty={recipe.difficulty}
+                            handleClick={() =>
+                                router.push(`/recipes/${recipe.recipeId}`)
+                            }
+                            imageURL={recipe.thumbnailUrl}
                         />
                     ))}
                 </div>
