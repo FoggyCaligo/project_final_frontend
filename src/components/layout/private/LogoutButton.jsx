@@ -20,7 +20,7 @@ export default function LogoutButton() {
         }
     };
 
-    // 카카오 로그아웃 — 카카오 RestApiKey 설정 후 SDK 연동 예정
+    // 카카오 로그아웃: 서버 JWT 세션 무효화 → 카카오 계정 로그아웃 → 프론트 세션 초기화
     const handleKakaoLogout = async () => {
         try {
             await logoutApi();
@@ -28,6 +28,10 @@ export default function LogoutButton() {
             // ignore
         } finally {
             logout();
+            // 카카오 계정도 로그아웃 (카카오 로그아웃 페이지로 이동 후 홈으로 복귀)
+            const restApiKey = "75029a3464f13bd358978e6ed88f9efd";
+            const logoutRedirectUri = encodeURIComponent(window.location.origin);
+            window.location.href = `https://kauth.kakao.com/oauth/logout?client_id=${restApiKey}&logout_redirect_uri=${logoutRedirectUri}`;
         }
     };
 
@@ -35,9 +39,12 @@ export default function LogoutButton() {
 
     if (user.loginType === "kakao") {
         return (
-            <Button variant="secondary" handleClick={handleKakaoLogout}>
-                카카오 로그아웃
-            </Button>
+            <div className="flex items-center gap-3">
+                <span className="text-sm text-[var(--text-sub)]">{user.loginId}</span>
+                <Button variant="secondary" handleClick={handleKakaoLogout}>
+                    카카오 로그아웃
+                </Button>
+            </div>
         );
     }
 

@@ -48,7 +48,8 @@ export default function LoginButton() {
     };
 
     const handleKakaoLogin = () => {
-        alert("카카오 로그인은 준비 중입니다.");
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+        window.location.href = `${apiBase}/v1/auth/kakao/login`;
     };
 
     if (user) return <LogoutButton />;
