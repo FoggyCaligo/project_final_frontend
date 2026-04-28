@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+import axios from "axios";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1",
@@ -21,7 +21,7 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    config.headers["X-User-Id"] = "2"; // 백엔드1 임시 인증용 헤더 (개발용)
+    config.headers["X-User-Id"] = "1"; // 백엔드1 임시 인증용 헤더 (개발용)
     return config;
   },
   (error) => Promise.reject(error)
