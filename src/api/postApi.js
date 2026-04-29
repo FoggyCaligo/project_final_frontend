@@ -19,10 +19,9 @@ export const getUserPosts = async (userId) => {
     return response.data;
 };
 
-// 커뮤니티 전체 게시글 목록 조회 API 추가
-export const getAllPosts = async () => {
-    const response = await api.get("/posts");
-    return response.data;
+export const getAllPosts = async (page = 0, size = 10) => {
+    const response = await api.get(`/posts?page=${page}&size=${size}`);
+    return response.data; // Page 객체 반환 (content, totalPages 등 포함)
 };
 
 export const getPostDetail = async (postId) => {
