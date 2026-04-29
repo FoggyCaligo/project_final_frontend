@@ -24,3 +24,13 @@ export const getAllPosts = async () => {
     const response = await api.get("/posts");
     return response.data;
 };
+
+export const getPostDetail = async (postId) => {
+    const response = await api.get(`/posts/${postId}`);
+    return response.data;
+};
+
+export const deletePost = async (postId) => {
+    const response = await api.delete(`/posts/${postId}`);
+    return response.data;
+};

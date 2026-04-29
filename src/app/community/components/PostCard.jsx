@@ -1,11 +1,12 @@
-"use client"; // 💡 Next.js 훅을 사용하기 위해 최상단에 추가
+"use client"; 
 import React from 'react';
-import { useRouter } from 'next/navigation'; // 💡 useRouter 불러오기
+import { useRouter } from 'next/navigation'; 
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
-export default function PostCard({ title, author, date, category, imageSrc, desc, altText }) {
-    const router = useRouter(); // 💡 라우터 객체 생성
+// 💡 1. props에 postId를 추가했습니다.
+export default function PostCard({ postId, title, author, date, category, imageSrc, desc, altText }) {
+    const router = useRouter(); 
 
     return (
         <Card style={{ margin: 0, padding: '24px' }}>
@@ -22,8 +23,8 @@ export default function PostCard({ title, author, date, category, imageSrc, desc
                 {desc}
             </p>
             <div className="flex flex-wrap gap-2 mt-5">
-                {/* 💡 window.location.href 대신 router.push 사용 */}
-                <Button variant="primary" handleClick={() => router.push('/community/detail')}>
+                {/* 💡 2. router.push 경로에 백틱(`)을 사용하여 postId 변수를 넣어줍니다. */}
+                <Button variant="primary" handleClick={() => router.push(`/community/detail/${postId}`)}>
                     상세 보기
                 </Button>
                 <Button variant="secondary">좋아요</Button>
