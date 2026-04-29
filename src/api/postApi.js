@@ -18,3 +18,9 @@ export const getUserPosts = async (userId) => {
     const response = await api.get(`/posts/users/${userId}`);
     return response.data;
 };
+
+// 커뮤니티 전체 게시글 목록 조회 API 추가
+export const getAllPosts = async () => {
+    const response = await api.get("/posts");
+    return response.data;
+};
