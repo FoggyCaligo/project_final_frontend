@@ -8,8 +8,6 @@ import CustomTag from '@/components/ui/Tag';
 import Section from '@/components/ui/Section';
 import PostCard from '@/app/community/components/PostCard';
 import { getBookmarkedRecipes } from '@/api/bookmarkApi';
-
-// 💡 중복을 제거하고 하나의 import 문으로 합쳤습니다.
 import { uploadImages, createPost, getUserPosts } from '@/api/postApi';
 
 export default function CommunityRegisterPage() {
@@ -18,11 +16,13 @@ export default function CommunityRegisterPage() {
     const fileInputRef = useRef(null);
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
-    const [recipe, setRecipe] = useState(""); // 선택된 레시피 ID
-    const [bookmarkedRecipes, setBookmarkedRecipes] = useState([]); // 서버에서 받아온 목록
-    const [recentPosts, setRecentPosts] = useState([]); // 최근 후기 상태
-    
-    // 현재 임시로 사용하는 로그인 유저 ID (추후 전역 상태나 토큰에서 가져오게 수정)
+    const [recipe, setRecipe] = useState(""); 
+    const [bookmarkedRecipes, setBookmarkedRecipes] = useState([]); 
+    const [recentPosts, setRecentPosts] = useState([]); 
+    // 로딩 상태 (기본값: false)
+    const [isLoading, setIsLoading] = useState(false);   
+
+    // 현재 임시로 사용하는 로그인 유저 ID
     const currentUserId = 1;
     const router = useRouter();
     
@@ -55,8 +55,6 @@ export default function CommunityRegisterPage() {
     // DB의 storage_path와 stored_name을 조합하여 웹 URL을 생성하는 유틸 함수
     const getImageUrl = (storagePath, storedName) => {
         if (!storedName) return placeholderSvg;
-        
-        // PHP 서버 웹 루트가 /var/www/html/ 이라면 아래와 같이 URL 매핑
         return `http://43.201.1.45/uploads/community/${storedName}`;
     };
 
@@ -77,10 +75,16 @@ export default function CommunityRegisterPage() {
     };
 
     const handleSubmit = async () => {
+        // 💡 이미 처리 중이라면 버튼을 여러 번 눌러도 무시하도록 처리
+        if (isLoading) return;
+
         if (images.length === 0) {
             alert("이미지를 하나 이상 등록해주세요.");
             return;
         }
+
+        // 💡 API 통신 시작 직전에 로딩 상태를 true로 변경
+        setIsLoading(true);
 
         try {
             // Step 1. PHP 서버로 이미지 업로드 요청
@@ -114,15 +118,7 @@ export default function CommunityRegisterPage() {
                 if (dbResult.success) {
                     console.log("[Submit Success] 게시글 등록이 완벽하게 처리되었습니다!");
                     alert("게시글이 성공적으로 등록되었습니다.");
-                    
-                    // 💡 등록 완료 후 최신 상태를 반영하기 위해 리스트 다시 불러오기
-                    const postData = await getUserPosts(currentUserId);
-                    setRecentPosts(postData);
-                    
-                    // 입력 폼 초기화 (선택 사항)
-                    setTitle("");
-                    setContent("");
-                    removeAllImages();
+                    router.push('/community');
                 }
             } else {
                 console.error("[Upload Error] 서버 반환 에러:", uploadResult.error);
@@ -130,10 +126,11 @@ export default function CommunityRegisterPage() {
             }
         } catch (error) {
             console.error("[Submit Exception] API 흐름 에러:", error);
-            
-            // Axios 에러 처리 (interceptor에서 정규화된 형태 반영)
             const errorMessage = error.message || "네트워크 오류가 발생했습니다.";
             alert(`오류가 발생했습니다: ${errorMessage}`);
+        } finally {
+            // 💡 통신이 성공하든 에러가 나든 마지막에는 무조건 로딩 상태를 꺼줌
+            setIsLoading(false);
         }
     };
 
@@ -265,7 +262,24 @@ export default function CommunityRegisterPage() {
                         </div>
 
                         <div className="flex flex-wrap gap-2 mt-5">
-                            <Button variant="primary" handleClick={handleSubmit}>후기 등록</Button>
+                            {/* 💡 로딩 상태에 따라 버튼 내용 및 클릭 제어 적용 */}
+                            <Button 
+                                variant="primary" 
+                                handleClick={handleSubmit}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <div className="flex items-center justify-center gap-2">
+                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        처리 중...
+                                    </div>
+                                ) : (
+                                    "후기 등록"
+                                )}
+                            </Button>
                             <Button variant="secondary" handleClick={removeAllImages}>전체 이미지 제거</Button>
                         </div>
                     </Card>
@@ -322,11 +336,12 @@ export default function CommunityRegisterPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* 배열 순회를 통해 PostCard 동적 생성 */}
+                    {/* 💡 배열 순회를 할 때 .slice(0, 4)를 붙여 최대 4개까지만 자릅니다. */}
                     {recentPosts.length > 0 ? (
-                        recentPosts.map((post, index) => (
+                        recentPosts.slice(0, 4).map((post, index) => (
                             <PostCard
                                 key={index}
+                                postId={post.postId}
                                 title={post.title}
                                 author={post.author}
                                 date={new Date(post.date).toLocaleString('ko-KR', {
