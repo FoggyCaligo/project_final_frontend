@@ -1,0 +1,151 @@
+.recipeContainer {
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+}
+
+.recipeSubHeader {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0;
+  border-bottom: 2px solid var(--primary);
+  display: inline-block;
+  padding-bottom: 0.5rem;
+}
+
+.updatedAt {
+  font-size: 0.875rem;
+  color: #a0a0a0;
+  padding-bottom: 0.5rem;
+}
+
+.infoTableContainer {
+  margin-top: 2rem;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border);
+}
+
+.infoTableTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 1.25rem 1.5rem;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border);
+  background-color: var(--soft-bg);
+}
+
+.tableContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.gridContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.gridContent .infoItem:nth-last-child(-n+2):nth-child(odd),
+.gridContent .infoItem:last-child {
+  border-bottom: none;
+}
+
+.tableContent .infoItem:last-child {
+  border-bottom: none;
+}
+
+/* Add vertical divider for grid layout */
+.gridContent .infoItem:nth-child(odd) {
+  border-right: 1px solid var(--border);
+}
+
+.infoLabel {
+  font-weight: 600;
+  color: var(--text-sub);
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.infoValue {
+  color: var(--text-main);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.emptyBox {
+  padding: 2rem;
+  background-color: var(--soft-bg);
+  text-align: center;
+  color: var(--text-sub);
+  font-weight: 500;
+}
+
+.starRating {
+  color: var(--accent);
+  letter-spacing: 2px;
+}
+
+.stepCard {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  background-color: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.stepImageContainer {
+  flex: 0 0 240px;
+  height: 180px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.stepImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stepContent {
+  flex: 1;
+}
+
+.stepNumber {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 1024px) {
+  .gridContent {
+    grid-template-columns: 1fr;
+  }
+  .gridContent .infoItem:nth-child(odd) {
+    border-right: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .stepCard {
+    flex-direction: column;
+  }
+  .stepImageContainer {
+    flex: 0 0 auto;
+    width: 100%;
+    height: 200px;
+  }
+}
