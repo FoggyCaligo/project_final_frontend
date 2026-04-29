@@ -131,11 +131,11 @@ export default function Modal({
 
                 {showFooter && (
                     <div className={base.footer} style={inlineStyle.footer}>
-                        <Button variant="secondary" handleClick={onClose}>
+                        <Button is_full={true} variant="secondary" handleClick={onClose}>
                             {cancelText}
                         </Button>
 
-                        <Button variant="primary" handleClick={onConfirm}>
+                        <Button is_full={true} variant="primary" handleClick={onConfirm}>
                             {confirmText}
                         </Button>
                     </div>
@@ -145,4 +145,4 @@ export default function Modal({
         </div>,
         document.body
     );
-}
+}

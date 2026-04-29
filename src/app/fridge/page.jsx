@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { fridgeApi } from "@/api/fridgeApi";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
-import TextInput from "@/components/ui/TextInput";
+import InputText from "@/components/ui/InputText.jsx"
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Section from "@/components/ui/Section";
@@ -346,7 +346,7 @@ export default function FridgePage() {
                             </div>
                         ) : (
                             <div className="flex flex-row gap-2 items-end">
-                                <TextInput
+                                <InputText
                                     is_full="true"
                                     placeholder="재료 이름"
                                     setText={currentIngredient.name}
@@ -387,7 +387,7 @@ export default function FridgePage() {
                             getText={(val) => updateField('storageType', val)}
                             is_full="true"
                         />
-                        <TextInput
+                        <InputText
                             placeholder="수량"
                             setText={currentIngredient.qty}
                             getText={(val) => updateField('qty', val)}
