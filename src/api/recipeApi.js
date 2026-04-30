@@ -5,7 +5,7 @@ export const getAllRecipes = async () => {
     return response.data.data;
 };
 
-// export const getRecipeDetail = async (id) => {
-//     const response = await api.get(`/recipes/${id}`);
-//     return response.data;
-// };
+export const getRecipeDetail = async (id) => {
+    const response = await api.get(`/recipes/${id}`);
+    return response.data;
+};

@@ -3,11 +3,10 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { fridgeApi } from "@/api/fridgeApi";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
-import InputText from "@/components/ui/InputText.jsx";
+import InputText from "@/components/ui/InputText.jsx"
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Section from "@/components/ui/Section";
-import InputDate from "@/components/ui/InputDate.jsx";
 import Modal from "@/components/ui/Modal.jsx";
 import Recipe from "@/components/ui/Recipe.jsx";
 import TestImg from "@/assets/test_img.jpg";
@@ -17,11 +16,9 @@ import SubTitle from "@/components/ui/SubTitle.jsx";
 import Select from "@/components/ui/Select.jsx";
 import IngredientComponent from "./components/Ingredient.jsx"
 
-
-
 // 모달 모드: 0: 닫힘, 1: 수정, 2: 추가
 const ModalModes = {close: 0, edit: 1, add: 2};
-//식재료 보관 형식
+
 const StorageType = {
     REFRIGERATED: "REFRIGERATED",
     FROZEN: "FROZEN",
@@ -34,10 +31,11 @@ const StorageType2Kor = {
     ROOM_TEMP: "실온",
     UNKNOWN: '알 수 없음',
 }
-    
+
 // 1. 식재료 데이터 모델 (프론트 로컬 상태)
 // 백엔드 DTO 매핑: id→ingredientId, name→name, expire→expirationDate, qty→quantity, categoryId→categoryId
 class Ingredient {
+
     constructor(id = null, name = "", expire = null, qty = 0, storageType = StorageType.UNKNOWN, freshnessStatus = null, categoryId = null, category = null) {
         this.id = id;
         this.name = name;
@@ -56,7 +54,6 @@ class Ingredient {
     }
 }
 
-// 백엔드 응답 항목(IngredientResponse) → 프론트 Ingredient 객체 변환
 function fromApiItem(item) {
     return new Ingredient(
         item.ingredientId,
@@ -70,15 +67,22 @@ function fromApiItem(item) {
     );
 }
 
-// 프론트 Ingredient → 백엔드 요청 DTO(CreateIngredientRequest / UpdateIngredientRequest) 변환
 function toApiDto(ingredient) {
-    return {
+    const q = Number(ingredient.qty);
+    const dto = {
         name: ingredient.name,
-        expirationDate: ingredient.expire,
-        quantity: Number(ingredient.qty),
+        quantity: Number.isFinite(q) ? q : 0,
         storageType: ingredient.storageType,
-        categoryId: ingredient.categoryId ?? null,
     };
+    const exp = ingredient.expire;
+    if (exp != null && exp !== "") {
+        dto.expirationDate = exp;
+    }
+    const cid = ingredient.categoryId;
+    if (cid != null && cid !== "") {
+        dto.categoryId = cid;
+    }
+    return dto;
 }
 
 // 2. 이미지 스캐너 데이터 모델
@@ -102,21 +106,18 @@ class ImageScanner {
 
 export default function FridgePage() {
     const [modalMode, setModalMode] = useState(0);
-    const [editIdx, setEditIdx] = useState(null); // 수정 중인 인덱스 저장
-    
+    const [editIdx, setEditIdx] = useState(null);
+
     const fileInputRef = useRef(null);
-    
+
     const [storage, setStorage] = useState([]);
     const [summary, setSummary] = useState(null);
     const [categories, setCategories] = useState([]);
     const [currentIngredient, setCurrentIngredient] = useState(new Ingredient());
     const [scanner, setScanner] = useState(new ImageScanner());
 
-    
-
     const RecipeList = getRecipeList();
 
-    // 초기 로드: 백엔드에서 식재료 목록 + 요약 조회
     const fetchIngredients = useCallback(async () => {
         try {
             const res = await fridgeApi.getIngredients();
@@ -150,20 +151,6 @@ export default function FridgePage() {
         fetchSummary();
         fetchCategories();
     }, [fetchIngredients, fetchSummary, fetchCategories]);
-
-    // 이미지 파일 변경 시 미리보기 생성
-    useEffect(() => {
-        if (!scanner.file) {
-            setScanner(prev => prev.cloneWith({ previewUrl: null, results: [] }));
-            return;
-        }
-        const url = URL.createObjectURL(scanner.file);
-        setScanner(prev => prev.cloneWith({
-            previewUrl: url,
-            results: ['사과', '복숭아', '자두']
-        }));
-        return () => URL.revokeObjectURL(url);
-    }, [scanner.file]);
 
     const updateField = (field, value) => {
         setCurrentIngredient(prev => prev.cloneWith({ [field]: value }));
@@ -201,39 +188,23 @@ export default function FridgePage() {
     };
 
     function getRecipeList() {
-        const url = TestImg.src || TestImg; // static import된 이미지는 이미 URL 정보를 가지고 있습니다.
+        const url = TestImg.src || TestImg;
         return ([
-            {
-                name: "레시피 1",
-                time: "30분",
-                difficulty: "쉬움",
-                imageURL: url,
-            },
-            {
-                name: "레시피 1",
-                time: "30분",
-                difficulty: "쉬움",
-                imageURL: url,
-            },
-            {
-                name: "레시피 1",
-                time: "30분",
-                difficulty: "쉬움",
-                imageURL: url,
-            }
+            { name: "레시피 1", time: "30분", difficulty: "쉬움", imageURL: url },
+            { name: "레시피 1", time: "30분", difficulty: "쉬움", imageURL: url },
+            { name: "레시피 1", time: "30분", difficulty: "쉬움", imageURL: url },
         ]);
     }
 
-    // 보관 장소 타입별로 카드를 생성하기 위한 배열 정의
     const storageCategories = Object.keys(StorageType).map(typeKey => ({
-        type: StorageType[typeKey], // 예: StorageType.REFRIGERATED
-        title: StorageType2Kor[typeKey], // 예: "냉장"
+        type: StorageType[typeKey],
+        title: StorageType2Kor[typeKey],
     }));
 
     return (
         <PrivateLayout>
             <Section>
-                {/* 냉장고 현황 카드 (모든 재료 표시) */}
+                {/* 냉장고 현황 카드 */}
                 <Card style={{ backgroundColor: "var(--border)" }}>
                     <div className="flex flex-row justify-between items-center mb-4">
                         <div className="flex flex-col">
@@ -246,7 +217,6 @@ export default function FridgePage() {
                             setModalMode(ModalModes.add);
                         }}>식재료 추가</Button>
                     </div>
-                    {/* 신선도 요약 통계 (규정: 신선도규칙_확정표_초안.md §요약집계) */}
                     {summary && (
                         <div className="mb-4">
                             <div className="flex flex-row gap-4 mb-3 text-sm">
@@ -307,7 +277,7 @@ export default function FridgePage() {
                     </div>
                 </Card>
 
-                {/* 보관 장소 타입별 재료 표시 (반복문 사용) */}
+                {/* 보관 장소 타입별 재료 표시 */}
                 {storageCategories.map((category) => (
                     <Card key={category.type}>
                         <div className="flex flex-col mb-4">
@@ -357,7 +327,6 @@ export default function FridgePage() {
                     </div>
                 </Card>
 
-                {/* Modal 컴포넌트는 변경 없음 */}
                 <Modal
                     title={modalMode === ModalModes.add ? "재료 추가" : "재료 수정"}
                     isOpen={modalMode !== ModalModes.close}
@@ -406,11 +375,6 @@ export default function FridgePage() {
                                 />
                             </div>
                         )}
-                        <InputDate
-                            placeholder="유통기한"
-                            setText={currentIngredient.expire}
-                            getText={(val) => updateField('expire', val)}
-                        />
                         <Select
                             placeholder="카테고리 선택"
                             options={categories.map(cat => ({
@@ -436,7 +400,6 @@ export default function FridgePage() {
                             setText={currentIngredient.qty}
                             getText={(val) => updateField('qty', val)}
                         />
-
                     </div>
                 </Modal>
             </Section>
