@@ -1,8 +1,13 @@
+"use client"; 
 import React from 'react';
+import { useRouter } from 'next/navigation'; 
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
-export default function PostCard({ title, author, date, category, imageSrc, desc, altText }) {
+// 💡 1. props에 postId를 추가했습니다.
+export default function PostCard({ postId, title, author, date, category, imageSrc, desc, altText }) {
+    const router = useRouter(); 
+
     return (
         <Card style={{ margin: 0, padding: '24px' }}>
             <div className="flex items-center justify-between gap-3 mb-3">
@@ -18,7 +23,10 @@ export default function PostCard({ title, author, date, category, imageSrc, desc
                 {desc}
             </p>
             <div className="flex flex-wrap gap-2 mt-5">
-                <Button variant="primary" handleClick={() => window.location.href = '/community/detail'}>상세 보기</Button>
+                {/* 💡 2. router.push 경로에 백틱(`)을 사용하여 postId 변수를 넣어줍니다. */}
+                <Button variant="primary" handleClick={() => router.push(`/community/detail/${postId}`)}>
+                    상세 보기
+                </Button>
                 <Button variant="secondary">좋아요</Button>
                 <Button variant="secondary">신고</Button>
             </div>
