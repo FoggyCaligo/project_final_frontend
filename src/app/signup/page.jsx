@@ -33,7 +33,8 @@ export default function SignupPage() {
         }
         try {
             const res = await checkLoginIdApi(loginId);
-            const available = res.data?.data?.available;
+            const isDuplicate = res.data?.data?.isDuplicate;
+            const available = isDuplicate === false;
             setLoginIdChecked(true);
             setLoginIdAvailable(available);
             if (!available) setError("이미 사용 중인 아이디입니다.");
@@ -102,6 +103,7 @@ export default function SignupPage() {
                                     setLoginId(value);
                                     setLoginIdChecked(false);
                                     setLoginIdAvailable(false);
+                                    setError("");
                                 }}>
                             </InputText>
 
@@ -110,7 +112,7 @@ export default function SignupPage() {
                             </Button>
                         </div>
                         {loginIdChecked && loginIdAvailable && (
-                            <p className="text-xs text-green-600">사용 가능한 아이디입니다.</p>
+                            <p className="text-xs text-green-600">아이디를 사용할 수 있습니다.</p>
                         )}
                     </div>
 
