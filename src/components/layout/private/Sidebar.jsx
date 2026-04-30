@@ -8,8 +8,9 @@ export default function Sidebar() {
 
     const menus = [
         { name: "재료 관리", path: "./fridge" },
-        { name: "레시피", path: "./recipes" },
+        { name: "전체레시피", path: "./recipes" },
         { name: "커뮤니티", path: "./community" },
+        { name: "추천레시피", path: "./recommendations" }
     ];
 
     return (

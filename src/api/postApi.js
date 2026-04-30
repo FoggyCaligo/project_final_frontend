@@ -33,3 +33,9 @@ export const deletePost = async (postId) => {
     const response = await api.delete(`/posts/${postId}`);
     return response.data;
 };
+
+// 게시글 수정 (PATCH) API
+export const updatePost = async (postId, postData) => {
+    const response = await api.patch(`/posts/${postId}`, postData);
+    return response.data;
+};
