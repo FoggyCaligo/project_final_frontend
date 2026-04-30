@@ -22,7 +22,7 @@ export default function InputDate({ getText, setText, placeholder = "날짜 선�
                 border: '1px solid var(--border, #e5e7eb)',
                 borderRadius: '22px', // 더욱 부드러운 곡률 적용 (rounded-xl 수준)
             }}
-            value={setText ? dayjs(setText) : null}
+            value={setText && dayjs(setText).isValid() ? dayjs(setText) : null}
             onChange={onChange}
             format="YYYY-MM-DD"
         />

@@ -72,13 +72,21 @@ function fromApiItem(item) {
 
 // 프론트 Ingredient → 백엔드 요청 DTO(CreateIngredientRequest / UpdateIngredientRequest) 변환
 function toApiDto(ingredient) {
-    return {
+    const q = Number(ingredient.qty);
+    const dto = {
         name: ingredient.name,
-        expirationDate: ingredient.expire,
-        quantity: Number(ingredient.qty),
+        quantity: Number.isFinite(q) ? q : 0,
         storageType: ingredient.storageType,
-        categoryId: ingredient.categoryId ?? null,
     };
+    const exp = ingredient.expire;
+    if (exp != null && exp !== "") {
+        dto.expirationDate = exp;
+    }
+    const cid = ingredient.categoryId;
+    if (cid != null && cid !== "") {
+        dto.categoryId = cid;
+    }
+    return dto;
 }
 
 // 2. 이미지 스캐너 데이터 모델
