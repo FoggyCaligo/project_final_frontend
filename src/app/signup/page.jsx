@@ -33,8 +33,7 @@ export default function SignupPage() {
         }
         try {
             const res = await checkLoginIdApi(loginId);
-            const isDuplicate = res.data?.data?.isDuplicate;
-            const available = isDuplicate === false;
+            const available = res.data?.data?.available;
             setLoginIdChecked(true);
             setLoginIdAvailable(available);
             if (!available) setError("이미 사용 중인 아이디입니다.");
@@ -94,7 +93,7 @@ export default function SignupPage() {
                     {/* 아이디 */}
                     <div className="flex flex-col gap-1">
                         <label className="text-xs font-semibold text-[var(--text-sub)]">아이디</label>
-                        <div className="grid gap-2" style={{ gridTemplateColumns: "5fr 1fr" }}>
+                        <div className="grid gap-2" style={{ gridTemplateColumns: "1fr auto" }}>
                             <InputText
                                 style="w-full min-w-0"
                                 placeholder="4~20자, 영문/숫자/_"
@@ -107,7 +106,7 @@ export default function SignupPage() {
                                 }}>
                             </InputText>
 
-                            <Button style="w-full min-w-0" handleClick={handleCheckLoginId}>
+                            <Button handleClick={handleCheckLoginId}>
                                 중복확인
                             </Button>
                         </div>
@@ -135,8 +134,7 @@ export default function SignupPage() {
                     {/* 비밀번호 */}
                     <div className="flex flex-col gap-1">
                         <label className="text-xs font-semibold text-[var(--text-sub)]">비밀번호</label>
-                        {/* <div className="relative flex flex-row"> */}
-                        <div className="grid gap-2" style={{ gridTemplateColumns: "5fr 1fr" }}>
+                        <div className="grid gap-2" style={{ gridTemplateColumns: "1fr auto" }}>
                         
                             <InputText
                                 type={showPassword ? "text" : "password"}

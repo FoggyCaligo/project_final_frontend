@@ -3,11 +3,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { getMeApi } from "@/api/authApi";
+import PropTypes from "prop-types";
 
 const AuthContext = createContext(null);
 
 // user 구조: { loginId: string, loginType: 'general' | 'kakao', nickname: string } | null
-// NOSONAR: javascript:S6774 (TypeScript 미사용 프로젝트이므로 propTypes 생략)
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const router = useRouter();
@@ -27,6 +27,24 @@ export function AuthProvider({ children }) {
         }
     }, []);
 
+  // 로그인 성공 후 호출: getMeApi로 닉네임 조회 후 세션/상태 업데이트
+  const login = useCallback(async (loginId, loginType = "general") => {
+    let finalNickname = loginId;
+    try {
+      const meRes = await getMeApi();
+      finalNickname = meRes.data?.data?.nickname ?? loginId;
+    } catch (error) {
+      console.warn("닉네임 정보를 가져오는 데 실패했습니다. loginId를 닉네임으로 사용합니다.", error);
+    }
+    const userData = { loginId, loginType, nickname: finalNickname };
+    try {
+      sessionStorage.setItem("authUser", JSON.stringify(userData));
+    } catch (e) {
+      console.warn("sessionStorage 저장 에러:", e);
+    }
+    setUser(userData);
+  }, []);
+
     // 카카오 로그인 콜백: URL 파라미터로 loginId 전달받아 세션 저장 후 nickname 조회
     useEffect(() => {
         if (globalThis.window === undefined) return;
@@ -35,46 +53,18 @@ export function AuthProvider({ children }) {
         const kakaoError = params.get("kakaoError");
 
         if (kakaoLogin === "success") {
-            const loginId = params.get("loginId");
-            if (loginId) {
-                getMeApi()
-                    .then((res) => {
-                        const nickname = res.data?.data?.nickname ?? loginId;
-                        const userData = { loginId, loginType: "kakao", nickname };
-                        try {
-                            sessionStorage.setItem("authUser", JSON.stringify(userData));
-                        } catch (e) {
-                            console.warn("sessionStorage 접근이 차단되었습니다.", e);
-                        }
-                        setUser(userData);
-                    })
-                    .catch(() => {
-                        const userData = { loginId, loginType: "kakao", nickname: loginId };
-                        try {
-                            sessionStorage.setItem("authUser", JSON.stringify(userData));
-                        } catch (e) {
-                            console.warn("sessionStorage 접근이 차단되었습니다.", e);
-                        }
-                        setUser(userData);
-                    });
-            }
-            // Next.js 라우터를 사용하여 안전하게 URL 파라미터 정리
-            router.replace(pathname);
+      const loginId = params.get("loginId");
+      if (loginId) {
+        // login 함수를 호출하여 닉네임 조회 및 상태 업데이트 통합
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        login(loginId, "kakao");
+      }
+      // Next.js 라우터를 사용하여 안전하게 URL 파라미터 정리
+      router.replace(pathname);
         } else if (kakaoError) {
-            router.replace(pathname);
+      router.replace(pathname);
         }
-    }, [pathname, router]);
-
-    // 로그인 성공 후 호출: loginId, 로그인 타입, nickname을 세션에 저장
-    const login = useCallback((loginId, loginType = "general", nickname = loginId) => {
-        const userData = { loginId, loginType, nickname };
-        try {
-            sessionStorage.setItem("authUser", JSON.stringify(userData));
-        } catch (e) {
-            console.warn("sessionStorage 저장 에러:", e);
-        }
-        setUser(userData);
-    }, []);
+  }, [pathname, router, login]);
 
     // 로그아웃 후 호출: 세션 초기화
     const logout = useCallback(() => {
@@ -91,6 +81,10 @@ export function AuthProvider({ children }) {
         </AuthContext.Provider>
     );
 }
+
+AuthProvider.propTypes = {
+    children: PropTypes.node,
+};
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
