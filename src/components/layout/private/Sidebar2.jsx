@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function Sidebar() {
+export default function Sidebar2() {
     const pathname = usePathname();
 
     const menus = [
         { name: "재료 관리", path: "/fridge" },
         { name: "전체레시피", path: "/recipes" },
         { name: "커뮤니티", path: "/community" },
-        { name: "추천레시피", path: "/recommendations" }
+        { name: "추천레시피", path: "/recommendations" },
+        { name: "최저가 비교", path: "/ingredients-price" },
     ];
 
     return (
