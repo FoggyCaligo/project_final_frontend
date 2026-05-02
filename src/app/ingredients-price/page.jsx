@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import PrivateLayout2 from "@/components/layout/private/PrivateLayout2";
-import { shoppingApi } from "@/api/shoppingApi";
+import { shoppingApi3 } from "@/api/shoppingApi3";
 import { mockPriceData } from "@/data/mockShoppingData2";
 import PropTypes from "prop-types";
 
@@ -145,10 +145,14 @@ export default function IngredientsPrice() {
   const [loading, setLoading] = useState(false);
   const [isMock, setIsMock] = useState(true);
 
+  // 검색 결과 (키워드 검색용)
+  const [searchResult, setSearchResult] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+
   const fetchPrices = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await shoppingApi.getFridgePrices();
+      const res = await shoppingApi3.getFridgePrices();
       const dataPayload = res.data?.data || res.data;
       const list = Array.isArray(dataPayload) ? dataPayload : [];
       if (list.length > 0) {
@@ -167,9 +171,40 @@ export default function IngredientsPrice() {
     fetchPrices();
   }, [fetchPrices]);
 
+  // 키워드 검색: Enter 또는 검색 버튼 클릭 시 실행
+  const handleSearch = useCallback(async () => {
+    const keyword = search.trim();
+    if (!keyword) {
+      setSearchResult(null);
+      return;
+    }
+    try {
+      setSearchLoading(true);
+      const res = await shoppingApi3.searchByKeyword(keyword);
+      const data = res.data?.data || res.data;
+      setSearchResult(data);
+    } catch (err) {
+      console.error("키워드 검색 실패:", err?.message);
+      setSearchResult(null);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [search]);
+
+  // 검색어가 비면 검색 결과 초기화
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    if (!e.target.value.trim()) {
+      setSearchResult(null);
+    }
+  };
+
   const filtered = priceData.filter((item) =>
     item.ingredientName?.includes(search.trim())
   );
+
+  // 검색 결과가 있으면 검색 결과를 우선 표시
+  const showSearchResult = searchResult && searchResult.items && searchResult.items.length > 0;
 
   return (
     <PrivateLayout2>
@@ -177,14 +212,19 @@ export default function IngredientsPrice() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[#3f3a36]">식재료 최저가 비교</h1>
-            {isMock && (
+            {isMock && searchResult === null && (
               <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
                 샘플 데이터
               </span>
             )}
+            {showSearchResult && (
+              <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-300">
+                ✨ 실시간 검색
+              </span>
+            )}
           </div>
           <p className="text-sm text-[#8a8078] mt-1">
-            냉장고에 있는 재료들의 최저가를 한눈에 비교해보세요
+            식재료명을 입력하고 검색 버튼을 누르면 실시간 최저가를 비교할 수 있습니다
           </p>
         </div>
 
@@ -193,7 +233,8 @@ export default function IngredientsPrice() {
             type="text"
             placeholder="재료명을 검색하세요 (예: 계란, 대파)"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={handleSearchChange}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             className="w-full max-w-md rounded-xl px-4 py-3 text-sm outline-none"
             style={{
               backgroundColor: "#f6f1ea",
@@ -201,33 +242,88 @@ export default function IngredientsPrice() {
               color: "#3f3a36",
             }}
           />
-          {/* 새로고침 버튼 : fetchPRices 실행  - api 재호출, 실제 가격 정보 갱신, 목데이터일때는 계속 샘플 데이터로 보이고 실제 데이터가 오면 셈플 데이터 배지 제거 */}
+          {/* 실시간 검색 버튼 */}
+          <button
+            onClick={handleSearch}
+            disabled={searchLoading || !search.trim()}
+            className="rounded-xl px-4 py-3 text-sm font-medium transition-all hover:opacity-80 disabled:opacity-50"
+            style={{ 
+              backgroundColor: search.trim() ? "#4ade80" : "#f6f1ea", 
+              border: "1px solid #e0d8cf", 
+              color: search.trim() ? "#ffffff" : "#3f3a36" 
+            }}
+          >
+            {searchLoading ? "검색 중..." : "🔍 실시간 검색"}
+          </button>
+          {/* 냉장고 데이터 새로고침 */}
           <button
             onClick={fetchPrices}
             className="rounded-xl px-4 py-3 text-sm font-medium transition-opacity hover:opacity-80"
             style={{ backgroundColor: "#f6f1ea", border: "1px solid #e0d8cf", color: "#3f3a36" }}
           >
-            실시간 가격 보기
+            🔄 냉장고
           </button>
         </div>
 
-        {loading && (
+        {/* 실시간 검색 결과 표시 */}
+        {searchLoading && (
+          <div className="text-center py-8 text-[#8a8078]">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-green-400 border-t-transparent mb-2" />
+            <p>&quot;{search}&quot; 실시간 최저가를 검색하고 있습니다...</p>
+            <p className="text-xs mt-1">네이버쇼핑 + 쿠팡에서 동시 검색 중</p>
+          </div>
+        )}
+
+        {showSearchResult && !searchLoading && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-[#3f3a36]">
+                &quot;{searchResult.ingredientName}&quot; 검색 결과
+              </h2>
+              <span className="text-xs text-[#b0a899]">
+                {searchResult.items.length}개 상품
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <PriceCard data={searchResult} />
+            </div>
+          </div>
+        )}
+
+        {searchResult && searchResult.items?.length === 0 && !searchLoading && (
+          <div className="text-center py-8 text-[#8a8078]">
+            &quot;{searchResult.ingredientName}&quot;에 대한 검색 결과가 없습니다.
+          </div>
+        )}
+
+        {/* 구분선 (검색 결과와 냉장고 데이터 사이) */}
+        {showSearchResult && !searchLoading && filtered.length > 0 && (
+          <hr className="border-[#e0d8cf]" />
+        )}
+
+        {/* 기존 냉장고 데이터 */}
+        {!showSearchResult && loading && (
           <div className="text-center py-16 text-[#8a8078]">
             가격 정보를 불러오는 중입니다...
           </div>
         )}
 
-        {!loading && filtered.length === 0 && (
+        {searchResult === null && !loading && filtered.length === 0 && (
           <div className="text-center py-16 text-[#8a8078]">
             {search ? "검색 결과가 없습니다." : "냉장고에 등록된 재료가 없습니다."}
           </div>
         )}
 
         {!loading && filtered.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((data) => (
-              <PriceCard key={data.ingredientId} data={data} />
-            ))}
+          <div>
+            {showSearchResult && (
+              <h2 className="text-lg font-semibold text-[#3f3a36] mb-3">📦 냉장고 식재료</h2>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filtered.map((data) => (
+                <PriceCard key={data.ingredientId} data={data} />
+              ))}
+            </div>
           </div>
         )}
       </div>

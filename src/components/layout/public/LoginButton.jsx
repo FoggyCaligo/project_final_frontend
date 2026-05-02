@@ -21,7 +21,7 @@ export default function LoginButton() {
     // 이메일 인증 완료 후 리다이렉트 시 ?emailVerified=true 표시용
     const [emailVerifiedMsg, setEmailVerifiedMsg] = useState(
         typeof window !== "undefined" &&
-        new URLSearchParams(window.location.search).get("emailVerified") === "true"
+            new URLSearchParams(window.location.search).get("emailVerified") === "true"
             ? "이메일 인증이 완료되었습니다. 로그인해주세요."
             : ""
     );
@@ -52,7 +52,7 @@ export default function LoginButton() {
 
     const handleKakaoLogin = () => {
         const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
-        window.location.href = `${apiBase}/v1/auth/kakao/login`;
+        window.location.href = `${apiBase}/v1/auth2/kakao/login`;
     };
 
     if (user) return <LogoutButton />;
@@ -62,7 +62,7 @@ export default function LoginButton() {
             <Button variant="secondary" handleClick={() => setIsOpen(true)}>
                 로그인
             </Button>
-{/* 모다로 로그인(일반/회원가입) 창 띄우기, 히원가입 페이지로도 이동 */}
+            {/* 모달로 로그인(일반/회원가입) 창 띄우기, 히원가입은 페이지 이동 */}
             <Modal
                 isOpen={isOpen}
                 title="로그인"
@@ -137,7 +137,7 @@ export default function LoginButton() {
                         <span>🍫</span> 카카오로 로그인
                     </button>
                 </div>
-{/* 회원가입은 회원가입 페이지로 이동 */}
+                {/* 회원가입은 회원가입 페이지로 이동 */}
                 <p className="mt-4 text-center text-xs text-[var(--text-sub)]">
                     계정이 없으신가요?{" "}
                     <Link
