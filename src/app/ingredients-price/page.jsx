@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import PrivateLayout2 from "@/components/layout/private/PrivateLayout2";
 import { shoppingApi } from "@/api/shoppingApi";
+import { mockPriceData } from "@/data/mockShoppingData2";
+import PropTypes from "prop-types";
 
 const SHIPPING_LABEL = {
   FREE: "무료배송",
@@ -27,24 +29,34 @@ function ShoppingItemRow({ item, isLowest }) {
       style={{ backgroundColor: "#ffffff60", border: "1px solid #e0d8cf" }}
     >
       <div className="flex items-center gap-3 min-w-0">
+        
+        {/* onError 핸들러로 외부 이미지 로드 실패시 자동 숨김 */}
         {item.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={item.imageUrl}
-            alt={item.productName}
+            alt={item.productName || "상품 이미지"}
+            width={40}
+            height={40}
             className="w-10 h-10 rounded-lg object-cover shrink-0"
+            onError={(e) => { e.currentTarget.style.display = "none"; }}
           />
         )}
+        {/* 네이버 , 11번가 등 mallName */}
         <div className="flex flex-col min-w-0">
           <span className="text-xs font-semibold text-[#8a8078]">{item.mallName}</span>
+          {/* 상품이름 */}
           <span className="text-sm text-[#3f3a36] truncate max-w-[160px]">
             {item.productName}
           </span>
+          {/* 무료 배송이나 배송 날짜 등 쇼핑정보 */}
           <div className="flex gap-2 mt-0.5">
             {item.shippingType && (
               <span className="text-xs text-[#b0a899]">
                 {SHIPPING_LABEL[item.shippingType] ?? item.shippingType}
               </span>
             )}
+            {/* 품절, 재고 여부 표시 */}
             {item.stockStatus && STOCK_STYLE[item.stockStatus] && (
               <span className={`text-xs ${STOCK_STYLE[item.stockStatus].color}`}>
                 {STOCK_STYLE[item.stockStatus].label}
@@ -75,6 +87,20 @@ function ShoppingItemRow({ item, isLowest }) {
   );
 }
 
+ShoppingItemRow.propTypes = {
+  item: PropTypes.shape({
+    purchaseUrl: PropTypes.string,
+    imageUrl: PropTypes.string,
+    productName: PropTypes.string,
+    mallName: PropTypes.string,
+    shippingType: PropTypes.string,
+    stockStatus: PropTypes.string,
+    price: PropTypes.number,
+    originalPrice: PropTypes.number,
+  }).isRequired,
+  isLowest: PropTypes.bool.isRequired,
+};
+
 function PriceCard({ data }) {
   const lowestPrice = data.lowestPrice;
 
@@ -103,31 +129,41 @@ function PriceCard({ data }) {
   );
 }
 
+PriceCard.propTypes = {
+  data: PropTypes.shape({
+    ingredientId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    ingredientName: PropTypes.string,
+    lowestPrice: PropTypes.number,
+    items: PropTypes.arrayOf(PropTypes.object),
+  }).isRequired,
+};
+
 export default function IngredientsPrice() {
   const [search, setSearch] = useState("");
-  const [priceData, setPriceData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // 실제 DB 연결전 목데이터로 테스트  
+  const [priceData, setPriceData] = useState(mockPriceData);
+  const [loading, setLoading] = useState(false);
+  const [isMock, setIsMock] = useState(true);
 
   const fetchPrices = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const res = await shoppingApi.getFridgePrices();
-      
-      // 백엔드 응답이 res.data 형태이거나 res.data.data 형태일 수 있으므로 배열인지 검증합니다.
       const dataPayload = res.data?.data || res.data;
       const list = Array.isArray(dataPayload) ? dataPayload : [];
-      
-      setPriceData(list);
+      if (list.length > 0) {
+        setPriceData(list);
+        setIsMock(false);
+      }
     } catch (err) {
-      setError(err?.message ?? "가격 정보를 불러오지 못했습니다.");
+      console.error("가격 정보 조회 실패:", err?.message);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPrices();
   }, [fetchPrices]);
 
@@ -139,7 +175,14 @@ export default function IngredientsPrice() {
     <PrivateLayout2>
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#3f3a36]">식재료 최저가 비교</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-[#3f3a36]">식재료 최저가 비교</h1>
+            {isMock && (
+              <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
+                샘플 데이터
+              </span>
+            )}
+          </div>
           <p className="text-sm text-[#8a8078] mt-1">
             냉장고에 있는 재료들의 최저가를 한눈에 비교해보세요
           </p>
@@ -158,12 +201,13 @@ export default function IngredientsPrice() {
               color: "#3f3a36",
             }}
           />
+          {/* 새로고침 버튼 : fetchPRices 실행  - api 재호출, 실제 가격 정보 갱신, 목데이터일때는 계속 샘플 데이터로 보이고 실제 데이터가 오면 셈플 데이터 배지 제거 */}
           <button
             onClick={fetchPrices}
             className="rounded-xl px-4 py-3 text-sm font-medium transition-opacity hover:opacity-80"
             style={{ backgroundColor: "#f6f1ea", border: "1px solid #e0d8cf", color: "#3f3a36" }}
           >
-            새로고침
+            실시간 가격 보기
           </button>
         </div>
 
@@ -173,19 +217,13 @@ export default function IngredientsPrice() {
           </div>
         )}
 
-        {!loading && error && (
-          <div className="text-center py-16 text-red-400">
-            {error}
-          </div>
-        )}
-
-        {!loading && !error && filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div className="text-center py-16 text-[#8a8078]">
             {search ? "검색 결과가 없습니다." : "냉장고에 등록된 재료가 없습니다."}
           </div>
         )}
 
-        {!loading && !error && filtered.length > 0 && (
+        {!loading && filtered.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((data) => (
               <PriceCard key={data.ingredientId} data={data} />
