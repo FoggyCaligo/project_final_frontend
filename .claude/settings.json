@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Read(//d/re_teamproject/server/src/main/java/com/today/fridge/shopping/dto/**)"
-    ]
-  }
-}

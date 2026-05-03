@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import PrivateLayout2 from "@/components/layout/private/PrivateLayout2";
 import { shoppingApi3 } from "@/api/shoppingApi3";
-import { mockPriceData } from "@/data/mockShoppingData2";
+import PrivateLayout2 from "@/components/layout/private/PrivateLayout2";
 import PropTypes from "prop-types";
 
 const SHIPPING_LABEL = {
@@ -19,6 +18,148 @@ const STOCK_STYLE = {
   OUT_OF_STOCK: { label: "품절", color: "text-red-500" },
 };
 
+const MALL_COLOR = {
+  "네이버쇼핑": "#03C75A",
+  "11번가": "#E0001B",
+};
+
+// 쇼핑몰별 로고 배지 (브랜드 색상 + 심볼)
+function MallBadge({ mallName }) {
+  const color = MALL_COLOR[mallName] ?? "#8a8078";
+console.log('mallName',mallName)
+  if (mallName === "네이버쇼핑") {
+    return (
+      <span
+        className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg text-white"
+        style={{ backgroundColor: color }}
+      >
+        {/* 네이버 N 심볼 */}
+        <span
+          className="inline-flex items-center justify-center rounded font-black text-[10px] leading-none px-0.5"
+          style={{ backgroundColor: "rgba(255,255,255,0.25)", color: "#fff" }}
+        >
+          N
+        </span>
+        {mallName}
+      </span>
+    );
+  }
+
+  if (mallName === "11번가") {
+    return (
+      <span
+        className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg text-white"
+        style={{ backgroundColor: color }}
+      >
+        {/* 11번가 숫자 심볼 */}
+        <span
+          className="inline-flex items-center justify-center rounded font-black text-[10px] leading-none px-0.5"
+          style={{ backgroundColor: "rgba(255,255,255,0.25)", color: "#fff" }}
+        >
+          11
+        </span>
+        {mallName}
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="text-xs font-bold px-2 py-1 rounded-lg text-white"
+      style={{ backgroundColor: color }}
+    >
+      {mallName}
+    </span>
+  );
+}
+
+MallBadge.propTypes = {
+  mallName: PropTypes.string.isRequired,
+};
+
+// 검색 결과용 쇼핑몰 카드 (네이버/11번가 나란히 표시)
+function MallCard({ item, isLowest }) {
+  const MALL_COLOR = {
+    "네이버쇼핑": "#03C75A",
+    "11번가": "#FF0000",
+  };
+  const color = MALL_COLOR[item.mallName] ?? "#8a8078";
+  return (
+    <a
+      href={item.purchaseUrl || "#"}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex-1 rounded-2xl p-4 flex flex-col gap-2 transition-opacity hover:opacity-80"
+      style={{ backgroundColor: "#ffffff", border: `2px solid ${color}20` }}
+    >
+      {/* 쇼핑몰 이름 */}
+      <div className="flex items-center justify-between">
+        <MallBadge id='MallBadge' mallName={item.mallName} />
+        {isLowest && (
+          <span className="text-xs px-2 py-0.5 rounded-full font-semibold text-white bg-green-500">
+            최저가
+          </span>
+        )}
+      </div>
+
+      {item.imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={item.imageUrl}
+          alt={item.productName || "상품 이미지"}
+          width={64}
+          height={64}
+          className="w-16 h-16 rounded-xl object-cover mx-auto"
+          onError={(e) => { e.currentTarget.style.display = "none"; }}
+        />
+      )}
+
+      <p className="text-sm text-[#3f3a36] font-medium line-clamp-2 min-h-[2.5rem]">
+        {item.productName}
+      </p>
+
+      <div className="mt-auto">
+        <span className="text-lg font-bold text-[#3f3a36]">
+          {item.price?.toLocaleString()}원
+        </span>
+        {item.originalPrice && item.originalPrice > item.price && (
+          <span className="text-xs text-[#b0a899] line-through ml-1">
+            {item.originalPrice.toLocaleString()}원
+          </span>
+        )}
+      </div>
+
+      <div className="flex gap-2 flex-wrap">
+        {item.shippingType && (
+          <span className="text-xs text-[#b0a899]">
+            {SHIPPING_LABEL[item.shippingType] ?? item.shippingType}
+          </span>
+        )}
+        {item.stockStatus && STOCK_STYLE[item.stockStatus] && (
+          <span className={`text-xs ${STOCK_STYLE[item.stockStatus].color}`}>
+            {STOCK_STYLE[item.stockStatus].label}
+          </span>
+        )}
+      </div>
+    </a>
+  );
+}
+
+MallCard.propTypes = {
+  item: PropTypes.shape({
+    purchaseUrl: PropTypes.string,
+    imageUrl: PropTypes.string,
+    productName: PropTypes.string,
+    mallName: PropTypes.string,
+    shippingType: PropTypes.string,
+    stockStatus: PropTypes.string,
+    price: PropTypes.number,
+    originalPrice: PropTypes.number,
+  }).isRequired,
+  isLowest: PropTypes.bool.isRequired,
+};
+
+// 냉장고 재료 섹션용 기존 행 컴포넌트
 function ShoppingItemRow({ item, isLowest }) {
   return (
     <a
@@ -29,8 +170,6 @@ function ShoppingItemRow({ item, isLowest }) {
       style={{ backgroundColor: "#ffffff60", border: "1px solid #e0d8cf" }}
     >
       <div className="flex items-center gap-3 min-w-0">
-        
-        {/* onError 핸들러로 외부 이미지 로드 실패시 자동 숨김 */}
         {item.imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -42,21 +181,17 @@ function ShoppingItemRow({ item, isLowest }) {
             onError={(e) => { e.currentTarget.style.display = "none"; }}
           />
         )}
-        {/* 네이버 , 11번가 등 mallName */}
         <div className="flex flex-col min-w-0">
           <span className="text-xs font-semibold text-[#8a8078]">{item.mallName}</span>
-          {/* 상품이름 */}
           <span className="text-sm text-[#3f3a36] truncate max-w-[160px]">
             {item.productName}
           </span>
-          {/* 무료 배송이나 배송 날짜 등 쇼핑정보 */}
           <div className="flex gap-2 mt-0.5">
             {item.shippingType && (
               <span className="text-xs text-[#b0a899]">
                 {SHIPPING_LABEL[item.shippingType] ?? item.shippingType}
               </span>
             )}
-            {/* 품절, 재고 여부 표시 */}
             {item.stockStatus && STOCK_STYLE[item.stockStatus] && (
               <span className={`text-xs ${STOCK_STYLE[item.stockStatus].color}`}>
                 {STOCK_STYLE[item.stockStatus].label}
@@ -106,7 +241,7 @@ function PriceCard({ data }) {
 
   return (
     <div
-      className="rounded-2xl p-5 flex flex-col gap-3"
+      className="rounded-2xl p-5 flex flex-col gap-4"
       style={{ backgroundColor: "#f6f1ea" }}
     >
       <div className="flex items-center justify-between">
@@ -116,9 +251,9 @@ function PriceCard({ data }) {
         </span>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex gap-3">
         {data.items?.map((item, idx) => (
-          <ShoppingItemRow
+          <MallCard
             key={item.mallProductId ?? idx}
             item={item}
             isLowest={item.price === lowestPrice}
@@ -140,38 +275,51 @@ PriceCard.propTypes = {
 
 export default function IngredientsPrice() {
   const [search, setSearch] = useState("");
-  // 실제 DB 연결전 목데이터로 테스트  
-  const [priceData, setPriceData] = useState(mockPriceData);
+  const [priceData, setPriceData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [isMock, setIsMock] = useState(true);
 
-  // 검색 결과 (키워드 검색용)
   const [searchResult, setSearchResult] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
 
-  const fetchPrices = useCallback(async () => {
+  // 페이지 초기 로딩: 사과·우유를 실시간 API로 조회 (예시 아이템)
+  const fetchDefaultPrices = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [appleRes, milkRes] = await Promise.all([
+        shoppingApi3.searchByKeyword("사과"),
+        shoppingApi3.searchByKeyword("우유"),
+      ]);
+      const results = [
+        appleRes.data?.data || appleRes.data,
+        milkRes.data?.data || milkRes.data,
+      ].filter((r) => r && r.items?.length > 0);
+      if (results.length > 0) setPriceData(results);
+    } catch (err) {
+      console.error("기본 가격 조회 실패:", err?.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 냉장고 버튼: 로그인된 사용자의 실제 냉장고 재료 조회
+  const fetchFridgePrices = useCallback(async () => {
     try {
       setLoading(true);
       const res = await shoppingApi3.getFridgePrices();
       const dataPayload = res.data?.data || res.data;
       const list = Array.isArray(dataPayload) ? dataPayload : [];
-      if (list.length > 0) {
-        setPriceData(list);
-        setIsMock(false);
-      }
+      if (list.length > 0) setPriceData(list);
     } catch (err) {
-      console.error("가격 정보 조회 실패:", err?.message);
+      console.error("냉장고 가격 조회 실패:", err?.message);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchPrices();
-  }, [fetchPrices]);
+    fetchDefaultPrices();
+  }, [fetchDefaultPrices]);
 
-  // 키워드 검색: Enter 또는 검색 버튼 클릭 시 실행
   const handleSearch = useCallback(async () => {
     const keyword = search.trim();
     if (!keyword) {
@@ -191,7 +339,6 @@ export default function IngredientsPrice() {
     }
   }, [search]);
 
-  // 검색어가 비면 검색 결과 초기화
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
     if (!e.target.value.trim()) {
@@ -203,7 +350,6 @@ export default function IngredientsPrice() {
     item.ingredientName?.includes(search.trim())
   );
 
-  // 검색 결과가 있으면 검색 결과를 우선 표시
   const showSearchResult = searchResult && searchResult.items && searchResult.items.length > 0;
 
   return (
@@ -212,11 +358,6 @@ export default function IngredientsPrice() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[#3f3a36]">식재료 최저가 비교</h1>
-            {isMock && searchResult === null && (
-              <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
-                샘플 데이터
-              </span>
-            )}
             {showSearchResult && (
               <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-300">
                 ✨ 실시간 검색
@@ -242,22 +383,20 @@ export default function IngredientsPrice() {
               color: "#3f3a36",
             }}
           />
-          {/* 실시간 검색 버튼 */}
           <button
             onClick={handleSearch}
             disabled={searchLoading || !search.trim()}
             className="rounded-xl px-4 py-3 text-sm font-medium transition-all hover:opacity-80 disabled:opacity-50"
-            style={{ 
-              backgroundColor: search.trim() ? "#4ade80" : "#f6f1ea", 
-              border: "1px solid #e0d8cf", 
-              color: search.trim() ? "#ffffff" : "#3f3a36" 
+            style={{
+              backgroundColor: search.trim() ? "#4ade80" : "#f6f1ea",
+              border: "1px solid #e0d8cf",
+              color: search.trim() ? "#ffffff" : "#3f3a36",
             }}
           >
             {searchLoading ? "검색 중..." : "🔍 실시간 검색"}
           </button>
-          {/* 냉장고 데이터 새로고침 */}
           <button
-            onClick={fetchPrices}
+            onClick={fetchFridgePrices}
             className="rounded-xl px-4 py-3 text-sm font-medium transition-opacity hover:opacity-80"
             style={{ backgroundColor: "#f6f1ea", border: "1px solid #e0d8cf", color: "#3f3a36" }}
           >
@@ -265,17 +404,16 @@ export default function IngredientsPrice() {
           </button>
         </div>
 
-        {/* 실시간 검색 결과 표시 */}
+        {/* 실시간 검색 로딩 */}
         {searchLoading && (
           <div className="text-center py-8 text-[#8a8078]">
             <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-green-400 border-t-transparent mb-2" />
             <p>&quot;{search}&quot; 실시간 최저가를 검색하고 있습니다...</p>
-            <p className="text-xs mt-1">네이버쇼핑 + 쿠팡에서 동시 검색 중</p>
+            <p className="text-xs mt-1">네이버쇼핑 + 11번가에서 동시 검색 중</p>
           </div>
         )}
-
         {showSearchResult && !searchLoading && (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-[#3f3a36]">
                 &quot;{searchResult.ingredientName}&quot; 검색 결과
@@ -284,8 +422,22 @@ export default function IngredientsPrice() {
                 {searchResult.items.length}개 상품
               </span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <PriceCard data={searchResult} />
+            <div
+              className="rounded-2xl p-5 flex flex-col gap-3"
+              style={{ backgroundColor: "#f6f1ea" }}
+            >
+              <span className="text-sm font-semibold text-green-600">
+                최저 {searchResult.lowestPrice?.toLocaleString()}원~
+              </span>
+              <div className="flex gap-3">
+                {searchResult.items.map((item, idx) => (
+                  <MallCard
+                    key={item.mallProductId ?? idx}
+                    item={item}
+                    isLowest={item.price === searchResult.lowestPrice}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -296,12 +448,12 @@ export default function IngredientsPrice() {
           </div>
         )}
 
-        {/* 구분선 (검색 결과와 냉장고 데이터 사이) */}
+        {/* 구분선 */}
         {showSearchResult && !searchLoading && filtered.length > 0 && (
           <hr className="border-[#e0d8cf]" />
         )}
 
-        {/* 기존 냉장고 데이터 */}
+        {/* 기본/냉장고 재료 섹션 */}
         {!showSearchResult && loading && (
           <div className="text-center py-16 text-[#8a8078]">
             가격 정보를 불러오는 중입니다...
@@ -310,18 +462,18 @@ export default function IngredientsPrice() {
 
         {searchResult === null && !loading && filtered.length === 0 && (
           <div className="text-center py-16 text-[#8a8078]">
-            {search ? "검색 결과가 없습니다." : "냉장고에 등록된 재료가 없습니다."}
+            {search ? "검색 결과가 없습니다." : "가격 정보를 불러오는 중입니다..."}
           </div>
         )}
 
         {!loading && filtered.length > 0 && (
-          <div>
+          <div className="flex flex-col gap-4">
             {showSearchResult && (
-              <h2 className="text-lg font-semibold text-[#3f3a36] mb-3">📦 냉장고 식재료</h2>
+              <h2 className="text-lg font-semibold text-[#3f3a36] mb-3">예시 식재료 가격</h2>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
               {filtered.map((data) => (
-                <PriceCard key={data.ingredientId} data={data} />
+                <PriceCard key={data.ingredientId ?? data.ingredientName} data={data} />
               ))}
             </div>
           </div>
