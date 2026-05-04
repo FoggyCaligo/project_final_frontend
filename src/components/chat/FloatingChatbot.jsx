@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Recipe from "@/components/ui/Recipe";
 import Button from "@/components/ui/Button";
 import { getChatRecommendations } from "@/api/chatApi";
@@ -10,6 +11,8 @@ export default function FloatingChatbot() {
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const [recommendations, setRecommendations] = useState([]);
+    const [botMessage, setBotMessage] = useState("");
+    const router = useRouter();
 
     const handleSend = async () => {
         if (!message.trim()) return;
@@ -21,7 +24,18 @@ export default function FloatingChatbot() {
                 message,
                 ["양배추", "두부"] // TODO: 회원 냉장고 재료로 교체
             );
+            const explanationMessage = data
+                .map((recipe, index) => {
+                    const explanation =
+                        recipe.llmExplanation ||
+                        recipe.reason ||
+                        "요청하신 조건과 잘 맞는 레시피입니다.";
 
+                    return `${index + 1}. ${recipe.title}\n${explanation}`;
+                })
+                .join("\n\n");
+
+            setBotMessage(explanationMessage);
             setRecommendations(data);
         } catch (e) {
             console.error(e);
@@ -60,10 +74,6 @@ export default function FloatingChatbot() {
                     </div>
 
                     <div className="p-4 flex flex-col gap-4">
-                        <div className="rounded-xl bg-gray-50 p-3 text-sm text-gray-600">
-                            예) 당뇨인데 두부로 간단한 저녁 추천해줘
-                        </div>
-
                         <div className="flex gap-2">
                             <input
                                 value={message}
@@ -71,7 +81,7 @@ export default function FloatingChatbot() {
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") handleSend();
                                 }}
-                                placeholder="오늘 뭐 먹을까요?"
+                                placeholder="예) 당뇨인데 두부로 간단한 저녁 추천해줘"
                                 className="flex-1 rounded-xl border px-3 py-2 text-sm outline-none"
                             />
 
@@ -89,21 +99,54 @@ export default function FloatingChatbot() {
                             </div>
                         )}
 
-                        <div className="max-h-[380px] overflow-y-auto flex flex-col gap-3 pr-1">
-                            {recommendations.map((recipe) => (
-                                <Recipe
-                                    key={recipe.recipeId}
-                                    name={recipe.title}
-                                    time={recipe.cookTime || "정보 없음"}
-                                    difficulty={recipe.difficulty || "보통"}
-                                    imageURL={recipe.thumbnailUrl}
-                                    variant="recommend"
-                                    matchRate={recipe.matchRate}
-                                    reason={recipe.reason}
-                                    conditionTags={recipe.conditionTags || []}
-                                    missingIngredients={recipe.missingIngredients || []}
-                                />
-                            ))}
+                        <div className="max-h-[390px] overflow-y-auto flex flex-col gap-4 pr-1">
+
+                            {botMessage && (
+                                <div className="max-w-[90%] whitespace-pre-line rounded-2xl bg-gray-100 px-4 py-3 text-sm text-gray-700 leading-relaxed">
+                                    {botMessage}
+                                </div>
+                            )}
+
+                            {!!recommendations.length && (
+                                <div>
+                                    <div className="mb-2 text-xs font-semibold text-gray-500">
+                                        추천 레시피
+                                    </div>
+
+                                    <div className="flex gap-3 overflow-x-auto pb-2">
+                                        {recommendations.map((recipe) => (
+                                            <button
+                                                key={recipe.recipeId}
+                                                onClick={() => router.push(`/recipes/${recipe.recipeId}`)}
+                                                className="min-w-[220px] max-w-[220px] overflow-hidden rounded-2xl border bg-white text-left shadow-sm"
+                                            >
+                                                <div className="h-32 overflow-hidden bg-gray-100">
+                                                    <img
+                                                        src={recipe.thumbnailUrl || "/next.svg"}
+                                                        alt={recipe.title}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                </div>
+
+                                                <div className="p-3">
+                                                    <div className="line-clamp-2 text-sm font-bold text-gray-800">
+                                                        {recipe.title}
+                                                    </div>
+
+                                                    <div className="mt-1 text-xs text-gray-500">
+                                                        {recipe.cookTimeText || "정보 없음"} · 일치 {recipe.matchRate}%
+                                                    </div>
+
+                                                    {recipe.reason && (
+                                                        <div className="mt-2 line-clamp-2 text-xs text-gray-600">
+                                                            {recipe.reason}
+                                                        </div>
+                                                    )}             </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
