@@ -6,18 +6,23 @@ import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import Section from "@/components/ui/Section";
 import Recipe from "@/components/ui/Recipe";
 import { getRecommendations } from "@/api/recommendApi";
+import Pagination from "@/components/ui/Pagination";
 
 export default function RecommendationsPage() {
     const router = useRouter();
 
     const [recipes, setRecipes] = useState([]);
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchRecommendations = async () => {
             try {
-                const data = await getRecommendations();
-                setRecipes(data);
+                const data = await getRecommendations(page, 9);
+                setRecipes(data.content);
+                console.log(data);
+                setTotalPages(data.pageInfo.totalPages);
             } catch (e) {
                 console.error(e);
             } finally {
@@ -26,7 +31,7 @@ export default function RecommendationsPage() {
         };
 
         fetchRecommendations();
-    }, []);
+    }, [page]);
 
     if (loading) {
         return (
@@ -66,6 +71,11 @@ export default function RecommendationsPage() {
                         />
                     ))}
                 </div>
+                <Pagination
+                    page={page + 1}
+                    totalPages={totalPages}
+                    onPageChange={(p) => setPage(p - 1)}
+                />
             </Section>
         </PrivateLayout>
     );
