@@ -13,6 +13,7 @@ export default function Sidebar() {
         { name: "추천레시피", path: "/recommendations" },
         { name: "커뮤니티", path: "/community" },
         { name: "마이페이지", path: "/mypage" },
+        { name: "최저가 비교", path: "/ingredients-price" },
     ];
 
     return (
