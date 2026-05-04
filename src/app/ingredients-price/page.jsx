@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { shoppingApi3 } from "@/api/shoppingApi3";
-import PrivateLayout2 from "@/components/layout/private/PrivateLayout2";
+import shoppingPrivateLayout from "@/components/layout/private/shoppingPrivateLayout";
 import PropTypes from "prop-types";
 
 const SHIPPING_LABEL = {
@@ -353,7 +353,7 @@ export default function IngredientsPrice() {
   const showSearchResult = searchResult && searchResult.items && searchResult.items.length > 0;
 
   return (
-    <PrivateLayout2>
+    <shoppingPrivateLayout>
       <div className="flex flex-col gap-6">
         <div>
           <div className="flex items-center gap-2">
@@ -479,6 +479,6 @@ export default function IngredientsPrice() {
           </div>
         )}
       </div>
-    </PrivateLayout2>
+    </shoppingPrivateLayout>
   );
 }
