@@ -43,8 +43,9 @@ export default function LoginButton() {
         try {
             await loginApi(loginId, password);
             // AuthContext의 login 함수를 호출합니다. 닉네임 조회는 login 함수 내부에서 처리됩니다.
-            login(loginId, "general");
+            await login(loginId, "general");
             handleClose();
+            router.push("/dashboard");
         } catch (err) {
             setError(err.message || "로그인에 실패했습니다.");
         }
