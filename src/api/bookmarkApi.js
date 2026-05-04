@@ -1,7 +1,9 @@
 import api from "@/config/axios";
 
-// 특정 유저의 북마크 레시피 목록 조회
+const unwrapApiData = (response, fallback = []) =>
+    response?.data?.data ?? response?.data ?? fallback;
+
 export const getBookmarkedRecipes = async (userId) => {
-    const response = await api.get(`/v1/bookmarks/${userId}`);
-    return response.data;
+    const response = await api.get(`/bookmarks/${userId}`);
+    return unwrapApiData(response, []);
 };
