@@ -85,11 +85,12 @@ function toApiDto(ingredient) {
     return dto;
 }
 
-// 2. 이미지 스캐너 데이터 모델
+// 2. 이미지 스캐너 데이터 모델 (results: API 후보 — 표시명 + 일치율 % + 폼에 넣을 이름)
 class ImageScanner {
     constructor(file = null, previewUrl = null, results = []) {
         this.file = file;
         this.previewUrl = previewUrl;
+        /** @type {{ pickName: string, pct: number | null }[]} */
         this.results = results;
     }
 
@@ -102,6 +103,23 @@ class ImageScanner {
     reset() {
         return new ImageScanner();
     }
+}
+
+/** recognizedCandidates → 최대 3건, confidence 0~1 → 정수 % */
+function mapVisionCandidatesForUi(candidates) {
+    const list = Array.isArray(candidates) ? candidates : [];
+    return list.slice(0, 3).map((c) => {
+        const conf = Number(c.confidence);
+        const pct = Number.isFinite(conf)
+            ? Math.min(100, Math.max(0, Math.round(conf * 100)))
+            : null;
+        const pickName =
+            (c.displayName && String(c.displayName).trim()) ||
+            (c.normalizedName && String(c.normalizedName).trim()) ||
+            (c.modelLabel && String(c.modelLabel).trim()) ||
+            "알 수 없음";
+        return { pickName, pct };
+    });
 }
 
 export default function FridgePage() {
@@ -157,8 +175,13 @@ export default function FridgePage() {
     };
 
     function onSelectImgScanResult(selected) {
-        setScanner(prev => prev.reset());
-        updateField('name', selected);
+        setScanner((prev) => {
+            if (prev.previewUrl?.startsWith("blob:")) {
+                URL.revokeObjectURL(prev.previewUrl);
+            }
+            return prev.reset();
+        });
+        updateField("name", selected);
     }
 
     const handleConfirm = async () => {
@@ -340,14 +363,32 @@ export default function FridgePage() {
                                     <img src={scanner.previewUrl} alt="preview" className="w-full h-full object-contain" />
                                     <button
                                         type="button"
-                                        onClick={() => setScanner(prev => prev.reset())}
+                                        onClick={() =>
+                                            setScanner((prev) => {
+                                                if (prev.previewUrl?.startsWith("blob:")) {
+                                                    URL.revokeObjectURL(prev.previewUrl);
+                                                }
+                                                return prev.reset();
+                                            })
+                                        }
                                         className="absolute top-2 right-2 bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center"
                                     >×</button>
                                 </div>
-                                <div className="flex flex-row w-full p-2 gap-2 bg-white/80 border-t">
-                                    {scanner.results.map((result, idx) => (
-                                        <Button key={idx} is_full="true" variant="primary" size="sm" handleClick={() => onSelectImgScanResult(result)}>
-                                            {result}
+                                <div className="flex flex-row w-full flex-wrap p-2 gap-2 bg-white/80 border-t">
+                                    {scanner.results.map((row, idx) => (
+                                        <Button
+                                            key={idx}
+                                            is_full="true"
+                                            variant="primary"
+                                            size="sm"
+                                            handleClick={() => onSelectImgScanResult(row.pickName)}
+                                        >
+                                            <span className="flex flex-col items-center gap-0.5 leading-tight">
+                                                <span>{row.pickName}</span>
+                                                <span className="text-xs font-normal opacity-90">
+                                                    {row.pct != null ? `${row.pct}%` : "—"}
+                                                </span>
+                                            </span>
                                         </Button>
                                     ))}
                                 </div>
@@ -368,9 +409,31 @@ export default function FridgePage() {
                                     ref={fileInputRef}
                                     className="hidden"
                                     accept="image/*"
-                                    onChange={(e) => {
-                                        const file = e.target.files[0];
-                                        if (file) setScanner(prev => prev.cloneWith({ file }));
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        const previewUrl = URL.createObjectURL(file);
+                                        setScanner((prev) => {
+                                            if (prev.previewUrl?.startsWith("blob:")) {
+                                                URL.revokeObjectURL(prev.previewUrl);
+                                            }
+                                            return prev.cloneWith({ file, previewUrl, results: [] });
+                                        });
+                                        try {
+                                            const res = await fridgeApi.recognizeIngredientImage(file, 3);
+                                            const candidates =
+                                                res.data?.data?.recognizedCandidates ?? [];
+                                            const results = mapVisionCandidatesForUi(candidates);
+                                            setScanner((prev) =>
+                                                prev.cloneWith({ file, previewUrl, results })
+                                            );
+                                        } catch (err) {
+                                            console.error("이미지 인식 실패:", err);
+                                            setScanner((prev) =>
+                                                prev.cloneWith({ file, previewUrl, results: [] })
+                                            );
+                                        }
+                                        e.target.value = "";
                                     }}
                                 />
                             </div>
