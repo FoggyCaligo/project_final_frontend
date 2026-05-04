@@ -39,3 +39,19 @@ export const updatePost = async (postId, postData) => {
     const response = await api.patch(`/posts/${postId}`, postData);
     return response.data;
 };
+
+// 💡 좋아요 API 추가
+export const addPostLike = async (postId, userId) => {
+    const response = await api.post(`/posts/${postId}/likes?userId=${userId}`);
+    return response.data;
+};
+
+export const removePostLike = async (postId, userId) => {
+    const response = await api.delete(`/posts/${postId}/likes?userId=${userId}`);
+    return response.data;
+};
+
+export const getPostLikeStatus = async (postId, userId) => {
+    const response = await api.get(`/posts/${postId}/likes/status?userId=${userId}`);
+    return response.data;
+};
