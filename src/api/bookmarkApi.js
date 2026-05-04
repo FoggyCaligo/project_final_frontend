@@ -1,10 +1,12 @@
 import api from "@/config/axios";
 
-// 특정 유저의 북마크 레시피 목록 조회
+// 변경됨: 특정 유저의 북마크 레시피 목록 조회
+const unwrapApiData = (response, fallback = []) =>
+    response?.data?.data ?? response?.data ?? fallback;
+
 export const getBookmarkedRecipes = async (userId) => {
-    // baseURL이 /api/v1 이므로 실제로는 /api/v1/bookmarks/{userId} 로 요청이 갑니다.
     const response = await api.get(`/bookmarks/${userId}`);
-    return response.data;
+    return unwrapApiData(response, []);
 };
 
 // 💡 파라미터로 userId와 recipeId를 모두 받고, URL에 ?userId= 를 붙여서 전송해야 합니다.
