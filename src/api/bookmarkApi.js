@@ -6,3 +6,19 @@ export const getBookmarkedRecipes = async (userId) => {
     const response = await api.get(`/bookmarks/${userId}`);
     return response.data;
 };
+
+// 💡 파라미터로 userId와 recipeId를 모두 받고, URL에 ?userId= 를 붙여서 전송해야 합니다.
+export const addBookmark = async (userId, recipeId) => {
+    const response = await api.post(`/bookmarks/${recipeId}?userId=${userId}`);
+    return response.data;
+};
+
+export const removeBookmark = async (userId, recipeId) => {
+    const response = await api.delete(`/bookmarks/${recipeId}?userId=${userId}`);
+    return response.data;
+};
+
+export const checkBookmarkStatus = async (userId, recipeId) => {
+    const response = await api.get(`/bookmarks/${recipeId}/status?userId=${userId}`);
+    return response.data;
+};
