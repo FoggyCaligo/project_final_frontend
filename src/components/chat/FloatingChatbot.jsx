@@ -94,14 +94,20 @@ export default function FloatingChatbot() {
                                 <Recipe
                                     key={recipe.recipeId}
                                     name={recipe.title}
-                                    time={recipe.cookTime || "정보 없음"}
-                                    difficulty={recipe.difficulty || "보통"}
+                                    time={recipe.cookTimeText || "정보 없음"}
+                                    difficulty={recipe.summary || "보통"}
                                     imageURL={recipe.thumbnailUrl}
                                     variant="recommend"
                                     matchRate={recipe.matchRate}
                                     reason={recipe.reason}
-                                    conditionTags={recipe.conditionTags || []}
-                                    missingIngredients={recipe.missingIngredients || []}
+                                    conditionTags={recipe.conditionTags}
+                                    missingIngredients={recipe.missingIngredients}
+                                    substituteSuggestions={recipe.substituteSuggestions}
+                                    warnings={recipe.warnings}
+                                    llmExplanation={recipe.llmExplanation}
+                                    semanticScore={recipe.semanticScore}
+                                    tagScore={recipe.tagScore}
+                                    hybridScore={recipe.hybridScore}
                                 />
                             ))}
                         </div>

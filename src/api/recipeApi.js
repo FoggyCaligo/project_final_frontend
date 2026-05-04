@@ -1,8 +1,8 @@
 import api from "@/config/axios";
 
-export const getAllRecipes = async (page = 0, size = 12) => {
+export const getAllRecipes = async (page = 0, size = 12, cookingType = "ALL", sort = "default") => {
     const response = await api.get("/recipes", {
-        params: { page, size },
+        params: { page, size, cookingType, sort },
     });
 
     return response.data.data;

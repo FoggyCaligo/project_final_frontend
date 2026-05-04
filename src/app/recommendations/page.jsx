@@ -53,7 +53,7 @@ export default function RecommendationsPage() {
                             key={recipe.recipeId}
                             name={recipe.title}
                             time={recipe.cookTimeText || "정보 없음"}
-                            difficulty={recipe.summary || "보통"}
+                            difficulty={recipe.difficultyLevel || "보통"}
                             imageURL={recipe.thumbnailUrl}
                             variant="recommend"
                             matchRate={recipe.matchRate}
