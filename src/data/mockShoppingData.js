@@ -1,4 +1,4 @@
-// 서버 IngredientPriceResponse 구조와 동일하게 맞춤
+// 서버 IngredientPriceResponse 구조와 동일 (사과·우유 예시, 네이버쇼핑 + 11번가)
 export const mockPriceData = [
   {
     ingredientId: 1,
