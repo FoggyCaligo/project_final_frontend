@@ -53,7 +53,7 @@ export default function LoginButton() {
 
     const handleKakaoLogin = () => {
         const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
-        window.location.href = `${apiBase}/v1/auth2/kakao/login`;
+        window.location.href = `${apiBase}/v1/auth/kakao/login`;
     };
 
     if (user) return <LogoutButton />;
