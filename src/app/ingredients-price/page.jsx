@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { shoppingApi3 } from "@/api/shoppingApi3";
+import { shoppingApi } from "@/api/shoppingApi";
 import shoppingPrivateLayout from "@/components/layout/private/shoppingPrivateLayout";
 import PropTypes from "prop-types";
 
@@ -286,8 +286,8 @@ export default function IngredientsPrice() {
     try {
       setLoading(true);
       const [appleRes, milkRes] = await Promise.all([
-        shoppingApi3.searchByKeyword("사과"),
-        shoppingApi3.searchByKeyword("우유"),
+        shoppingApi.searchByKeyword("사과"),
+        shoppingApi.searchByKeyword("우유"),
       ]);
       const results = [
         appleRes.data?.data || appleRes.data,
@@ -305,7 +305,7 @@ export default function IngredientsPrice() {
   const fetchFridgePrices = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await shoppingApi3.getFridgePrices();
+      const res = await shoppingApi.getFridgePrices();
       const dataPayload = res.data?.data || res.data;
       const list = Array.isArray(dataPayload) ? dataPayload : [];
       if (list.length > 0) setPriceData(list);
@@ -328,7 +328,7 @@ export default function IngredientsPrice() {
     }
     try {
       setSearchLoading(true);
-      const res = await shoppingApi3.searchByKeyword(keyword);
+      const res = await shoppingApi.searchByKeyword(keyword);
       const data = res.data?.data || res.data;
       setSearchResult(data);
     } catch (err) {

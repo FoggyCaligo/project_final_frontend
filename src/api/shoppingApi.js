@@ -1,7 +1,7 @@
 import api from "@/config/axios";
 
 // Redis 캐시 기반 쇼핑 API v3
-export const shoppingApi3 = {
+export const shoppingApi = {
   // 냉장고 식재료 전체 최저가 조회 (로그인 필요)
   getFridgePrices: () => api.get("/v1/shopping/fridge/prices"),
 
