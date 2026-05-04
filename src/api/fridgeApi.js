@@ -6,5 +6,5 @@ export const fridgeApi = {
     getCategories: () => api.get("/fridge/categories"),
     addIngredient: (data) => api.post("/fridge/ingredients", data),
     updateIngredient: (id, data) => api.patch(`/fridge/ingredients/${id}`, data),
-    deleteIngredient: (id) => api.delete(`/fridge/ingredients/${id}`)
+    deleteIngredient: (id) => api.delete(`/fridge/ingredients/${id}`),
 };
