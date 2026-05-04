@@ -26,8 +26,9 @@ export default function Sidebar() {
                         <Link
                             key={menu.path}
                             href={menu.path}
-                            className={`rounded-xl px-3 py-2 ${active ? "bg-[#f6f1ea]" : ""
-                                }`}
+                            className={`rounded-xl px-3 py-2 ${
+                                active ? "bg-[#f6f1ea]" : ""
+                            }`}
                         >
                             {menu.name}
                         </Link>
