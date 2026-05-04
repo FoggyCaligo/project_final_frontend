@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import Button from "./Button";
 
 export default function Modal({
@@ -77,7 +78,7 @@ export default function Modal({
         }
     };
 
-    return (
+    return createPortal(
         <div
             className={base.overlay}
             style={inlineStyle.overlay}
@@ -133,6 +134,7 @@ export default function Modal({
                     </div>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

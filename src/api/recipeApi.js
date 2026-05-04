@@ -11,5 +11,5 @@ export const getAllRecipes = async (page = 0, size = 12, cookingType = "ALL", so
 
 export const getRecipeDetail = async (id) => {
     const response = await api.get(`/recipes/${id}`);
-    return response.data;
+    return response.data?.data ?? response.data;
 };
