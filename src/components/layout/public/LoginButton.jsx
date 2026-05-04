@@ -6,7 +6,7 @@ import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useAuth } from "@/context/AuthContext";
-import { loginApi, getMeApi } from "@/api/authApi";
+import { loginApi } from "@/api/authApi";
 import LogoutButton from "@/components/layout/private/LogoutButton";
 
 export default function LoginButton() {
@@ -42,9 +42,8 @@ export default function LoginButton() {
         }
         try {
             await loginApi(loginId, password);
-            const meRes = await getMeApi();
-            const nickname = meRes.data?.data?.nickname ?? loginId;
-            login(loginId, "general", nickname);
+            // AuthContext의 login 함수를 호출합니다. 닉네임 조회는 login 함수 내부에서 처리됩니다.
+            login(loginId, "general");
             handleClose();
         } catch (err) {
             setError(err.message || "로그인에 실패했습니다.");

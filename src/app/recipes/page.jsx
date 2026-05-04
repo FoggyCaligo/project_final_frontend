@@ -28,8 +28,8 @@ export default function RecipesPage() {
                         <Recipe
                             key={recipe.recipeId}
                             name={recipe.title}
-                            time={recipe.cookTime}
-                            difficulty={recipe.difficulty}
+                            time={recipe.cookTimeText}
+                            difficulty={recipe.summary}
                             handleClick={() =>
                                 router.push(`/recipes/${recipe.recipeId}`)
                             }

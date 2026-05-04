@@ -7,9 +7,12 @@ export default function Sidebar() {
     const pathname = usePathname();
 
     const menus = [
-        { name: "재료 관리", path: "./fridge" },
-        { name: "레시피", path: "./recipes" },
-        { name: "커뮤니티", path: "./community" },
+        { name: "대시보드", path: "/dashboard" },
+        { name: "재료 관리", path: "/fridge" },
+        { name: "전체레시피", path: "/recipes" },
+        { name: "추천레시피", path: "/recommendations" },
+        { name: "커뮤니티", path: "/community" },
+        { name: "마이페이지", path: "/mypage" },
     ];
 
     return (
@@ -22,8 +25,9 @@ export default function Sidebar() {
                         <Link
                             key={menu.path}
                             href={menu.path}
-                            className={`rounded-xl px-3 py-2 ${active ? "bg-[#f6f1ea]" : ""
-                                }`}
+                            className={`rounded-xl px-3 py-2 ${
+                                active ? "bg-[#f6f1ea]" : ""
+                            }`}
                         >
                             {menu.name}
                         </Link>
