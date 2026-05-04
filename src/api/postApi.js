@@ -54,3 +54,15 @@ export const getPostLikeStatus = async (postId, userId) => {
     const response = await api.get(`/v1/posts/${postId}/likes/status?userId=${userId}`);
     return response.data;
 };
+
+// 💡 신고 API 추가
+export const addPostReport = async (postId, userId) => {
+    // 임시로 reasonCode나 detailText는 비워두고 넘깁니다. (추후 모달 등에서 값 추가 가능)
+    const response = await api.post(`/v1/posts/${postId}/reports?userId=${userId}`);
+    return response.data;
+};
+
+export const getPostReportStatus = async (postId, userId) => {
+    const response = await api.get(`/v1/posts/${postId}/reports/status?userId=${userId}`);
+    return response.data;
+};

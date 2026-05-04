@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { getPostDetail, deletePost, addPostLike, removePostLike, getPostLikeStatus } from '@/api/postApi';
+import { getPostDetail, deletePost, addPostLike, removePostLike, getPostLikeStatus, addPostReport, getPostReportStatus } from '@/api/postApi';
 import { addBookmark, removeBookmark, checkBookmarkStatus } from '@/api/bookmarkApi';
 
 export default function CommunityDetailPage() {
@@ -10,14 +10,16 @@ export default function CommunityDetailPage() {
     const [post, setPost] = useState(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0); 
     
-    // 북마크 상태
+    // 북마크, 좋아요 상태
     const [isBookmarked, setIsBookmarked] = useState(false); 
     const [isBookmarkLoading, setIsBookmarkLoading] = useState(false); 
-
-    // 좋아요 상태
     const [isLiked, setIsLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(0);
     const [isLikeLoading, setIsLikeLoading] = useState(false);
+
+    // 💡 신고 상태 추가
+    const [isReported, setIsReported] = useState(false);
+    const [isReportLoading, setIsReportLoading] = useState(false);
 
     // 테스트용 현재 유저 ID
     const currentUserId = 2;
@@ -33,11 +35,16 @@ export default function CommunityDetailPage() {
                     setIsBookmarked(statusData.isBookmarked);
                 }
 
-                // 좋아요 상태 및 개수 조회
                 const likeData = await getPostLikeStatus(postId, currentUserId);
                 setIsLiked(likeData.isLiked);
                 const fetchedCount = likeData.likeCount ?? likeData.like_count ?? 0;
                 setLikeCount(Number(fetchedCount));
+
+                // 💡 상세 페이지 로드 시 신고 여부 확인
+                if (data.authorUserId !== currentUserId) {
+                    const reportData = await getPostReportStatus(postId, currentUserId);
+                    setIsReported(reportData.isReported);
+                }
 
             } catch (error) {
                 console.error("게시글 로드 실패:", error);
@@ -54,7 +61,35 @@ export default function CommunityDetailPage() {
         }
     };
 
-    const handleBookmarkToggle = async () => {
+    // 💡 신고 토글 핸들러 구현
+    const handleReport = async () => {
+        // 요구사항 3: 이미 신고한 경우 alert 후 종료
+        if (isReported) {
+            alert("이미 검토중인 글입니다.");
+            return;
+        }
+
+        if (isReportLoading) return;
+
+        // 요구사항 1: 컨펌 창 띄우기
+        if (confirm("정말 이 게시글을 신고하시겠습니까?")) {
+            setIsReportLoading(true);
+            try {
+                await addPostReport(postId, currentUserId);
+                setIsReported(true);
+                alert("신고가 접수되었습니다.");
+                // 요구사항 2: 목록 페이지로 리다이렉트
+                router.push('/community');
+            } catch (error) {
+                console.error("신고 처리 실패:", error);
+                alert("신고 처리에 실패했습니다.");
+            } finally {
+                setIsReportLoading(false);
+            }
+        }
+    };
+
+    const handleBookmarkToggle = async () => { /* 기존 코드 동일 */
         if (!post.recipeId || isBookmarkLoading) return;
         setIsBookmarkLoading(true);
         try {
@@ -67,17 +102,14 @@ export default function CommunityDetailPage() {
             }
         } catch (error) {
             console.error("북마크 처리 실패:", error);
-            alert("북마크 처리에 실패했습니다.");
         } finally {
             setIsBookmarkLoading(false);
         }
     };
 
-    const handleLikeToggle = async () => {
+    const handleLikeToggle = async () => { /* 기존 코드 동일 */
         if (isLikeLoading) return;
         setIsLikeLoading(true);
-        
-        // Optimistic UI
         setIsLiked(!isLiked);
         setLikeCount(prev => {
             const current = Number(prev) || 0; 
@@ -91,7 +123,6 @@ export default function CommunityDetailPage() {
                 await addPostLike(postId, currentUserId);
             }
         } catch (error) {
-            console.error("좋아요 처리 실패:", error);
             setIsLiked(isLiked);
             setLikeCount(prev => {
                 const current = Number(prev) || 0;
@@ -160,7 +191,6 @@ export default function CommunityDetailPage() {
                             </>
                         ) : (
                             <>
-                                {/* 💡 좋아요 버튼 */}
                                 <button 
                                     className={`btn flex items-center gap-1.5 transition-all duration-300 active:scale-95 ${
                                         isLiked ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-md' : 'btn-outline'
@@ -169,7 +199,6 @@ export default function CommunityDetailPage() {
                                     disabled={isLikeLoading}
                                 >
                                     <svg 
-                                        // 💡 isLiked일 때 'text-red-500'을 추가하여 하트 아이콘만 빨갛게 만듭니다.
                                         className={`w-4 h-4 transition-transform duration-300 ${isLiked ? 'scale-110 text-red-500' : ''}`} 
                                         fill={isLiked ? 'currentColor' : 'none'} 
                                         stroke="currentColor" 
@@ -208,9 +237,20 @@ export default function CommunityDetailPage() {
                     </div>
 
                     {!isAuthor && (
-                        <button className="btn bg-red-500 text-white hover:bg-red-600 border-red-500 flex items-center gap-1.5">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                            신고하기
+                        // 💡 요구사항 반영된 신고하기 버튼
+                        <button 
+                            className={`btn flex items-center gap-1.5 transition-all ${
+                                isReported 
+                                    ? 'bg-gray-400 text-white border-gray-400 cursor-not-allowed' // 신고 완료 시 회색 비활성화 스타일
+                                    : 'bg-red-500 text-white hover:bg-red-600 border-red-500 active:scale-95'
+                            }`}
+                            onClick={handleReport}
+                            disabled={isReportLoading}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            {isReported ? '신고됨' : '신고하기'}
                         </button>
                     )}
                 </div>
