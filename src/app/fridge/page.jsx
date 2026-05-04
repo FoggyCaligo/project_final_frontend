@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import { normalizeIngredientItem } from "@/lib/fridgeApiNormalize";
 import { fridgeApi } from "@/api/fridgeApi";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
-import InputText from "@/components/ui/InputText.jsx";
+import InputText from "@/components/ui/InputText.jsx"
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Section from "@/components/ui/Section";
-import InputDate from "@/components/ui/InputDate.jsx";
 import Modal from "@/components/ui/Modal.jsx";
 import Recipe from "@/components/ui/Recipe.jsx";
 import TestImg from "@/assets/test_img.jpg";
@@ -16,12 +16,12 @@ import Title from "@/components/ui/Title.jsx";
 import SubTitle from "@/components/ui/SubTitle.jsx";
 import Select from "@/components/ui/Select.jsx";
 import IngredientComponent from "./components/Ingredient.jsx"
-
-
+import { fileAssetPublicUrl } from "@/lib/fileAssetUrl";
+import { inferCategoryIdFromIngredientName } from "@/lib/ingredientCategoryHeuristic";
 
 // 모달 모드: 0: 닫힘, 1: 수정, 2: 추가
 const ModalModes = {close: 0, edit: 1, add: 2};
-//식재료 보관 형식
+
 const StorageType = {
     REFRIGERATED: "REFRIGERATED",
     FROZEN: "FROZEN",
@@ -34,11 +34,24 @@ const StorageType2Kor = {
     ROOM_TEMP: "실온",
     UNKNOWN: '알 수 없음',
 }
-    
+
 // 1. 식재료 데이터 모델 (프론트 로컬 상태)
 // 백엔드 DTO 매핑: id→ingredientId, name→name, expire→expirationDate, qty→quantity, categoryId→categoryId
 class Ingredient {
-    constructor(id = null, name = "", expire = null, qty = 0, storageType = StorageType.UNKNOWN, freshnessStatus = null, categoryId = null, category = null) {
+
+    constructor(
+        id = null,
+        name = "",
+        expire = null,
+        qty = 0,
+        storageType = StorageType.UNKNOWN,
+        freshnessStatus = null,
+        categoryId = null,
+        category = null,
+        visionFileId = null,
+        imageStoragePath = null,
+        imageStoredName = null
+    ) {
         this.id = id;
         this.name = name;
         this.expire = expire;
@@ -47,17 +60,33 @@ class Ingredient {
         this.freshnessStatus = freshnessStatus;
         this.categoryId = categoryId;
         this.category = category;
+        /** 이미지 인식 후 발급된 file_asset id — 등록·수정 시 file_id 로 전달 */
+        this.visionFileId = visionFileId;
+        this.imageStoragePath = imageStoragePath;
+        this.imageStoredName = imageStoredName;
     }
 
     cloneWith(fields) {
-        const next = new Ingredient(this.id, this.name, this.expire, this.qty, this.storageType, this.freshnessStatus, this.categoryId, this.category);
+        const next = new Ingredient(
+            this.id,
+            this.name,
+            this.expire,
+            this.qty,
+            this.storageType,
+            this.freshnessStatus,
+            this.categoryId,
+            this.category,
+            this.visionFileId,
+            this.imageStoragePath,
+            this.imageStoredName
+        );
         Object.assign(next, fields);
         return next;
     }
 }
 
-// 백엔드 응답 항목(IngredientResponse) → 프론트 Ingredient 객체 변환
-function fromApiItem(item) {
+function fromApiItem(raw) {
+    const item = normalizeIngredientItem(raw);
     return new Ingredient(
         item.ingredientId,
         item.name,
@@ -66,26 +95,44 @@ function fromApiItem(item) {
         item.storageType ?? StorageType.UNKNOWN,
         item.freshnessStatus ?? null,
         item.categoryId ?? null,
-        item.category ?? null
+        item.category ?? null,
+        item.imageFileId ?? null,
+        item.imageStoragePath ?? null,
+        item.imageStoredName ?? null
     );
 }
 
-// 프론트 Ingredient → 백엔드 요청 DTO(CreateIngredientRequest / UpdateIngredientRequest) 변환
-function toApiDto(ingredient) {
-    return {
+function toApiDto(ingredient, fallbackFileId = null) {
+    const q = Number(ingredient.qty);
+    const dto = {
         name: ingredient.name,
-        expirationDate: ingredient.expire,
-        quantity: Number(ingredient.qty),
+        quantity: Number.isFinite(q) ? q : 0,
         storageType: ingredient.storageType,
-        categoryId: ingredient.categoryId ?? null,
     };
+    const exp = ingredient.expire;
+    if (exp != null && exp !== "") {
+        dto.expirationDate = exp;
+    }
+    const cid = ingredient.categoryId;
+    if (cid != null && cid !== "") {
+        dto.categoryId = cid;
+    }
+    const vf = ingredient.visionFileId ?? fallbackFileId;
+    if (vf != null) {
+        const n = Number(vf);
+        if (Number.isFinite(n) && n > 0) {
+            dto.file_id = n;
+        }
+    }
+    return dto;
 }
 
-// 2. 이미지 스캐너 데이터 모델
+// 2. 이미지 스캐너 데이터 모델 (results: API 후보 — 표시명 + 일치율 % + 폼에 넣을 이름)
 class ImageScanner {
     constructor(file = null, previewUrl = null, results = []) {
         this.file = file;
         this.previewUrl = previewUrl;
+        /** @type {{ pickName: string, pct: number | null }[]} */
         this.results = results;
     }
 
@@ -100,23 +147,41 @@ class ImageScanner {
     }
 }
 
+/** recognizedCandidates → 최대 3건, confidence 0~1 → 정수 % */
+function mapVisionCandidatesForUi(candidates) {
+    const list = Array.isArray(candidates) ? candidates : [];
+    return list.slice(0, 3).map((c) => {
+        const conf = Number(c.confidence);
+        const pct = Number.isFinite(conf)
+            ? Math.min(100, Math.max(0, Math.round(conf * 100)))
+            : null;
+        const pickName =
+            (c.displayName && String(c.displayName).trim()) ||
+            (c.normalizedName && String(c.normalizedName).trim()) ||
+            (c.modelLabel && String(c.modelLabel).trim()) ||
+            "알 수 없음";
+        return { pickName, pct };
+    });
+}
+
 export default function FridgePage() {
     const [modalMode, setModalMode] = useState(0);
-    const [editIdx, setEditIdx] = useState(null); // 수정 중인 인덱스 저장
-    
+    const [editIdx, setEditIdx] = useState(null);
+
     const fileInputRef = useRef(null);
-    
+    /** state 갱신 타이밍과 무관하게 등록 시 file_id 전달 */
+    const visionFileIdRef = useRef(null);
+
     const [storage, setStorage] = useState([]);
     const [summary, setSummary] = useState(null);
     const [categories, setCategories] = useState([]);
     const [currentIngredient, setCurrentIngredient] = useState(new Ingredient());
     const [scanner, setScanner] = useState(new ImageScanner());
-
-    
+    /** 이미지 인식 API 실패 시 사용자 안내 */
+    const [visionRecognitionError, setVisionRecognitionError] = useState("");
 
     const RecipeList = getRecipeList();
 
-    // 초기 로드: 백엔드에서 식재료 목록 + 요약 조회
     const fetchIngredients = useCallback(async () => {
         try {
             const res = await fridgeApi.getIngredients();
@@ -151,32 +216,31 @@ export default function FridgePage() {
         fetchCategories();
     }, [fetchIngredients, fetchSummary, fetchCategories]);
 
-    // 이미지 파일 변경 시 미리보기 생성
-    useEffect(() => {
-        if (!scanner.file) {
-            setScanner(prev => prev.cloneWith({ previewUrl: null, results: [] }));
-            return;
-        }
-        const url = URL.createObjectURL(scanner.file);
-        setScanner(prev => prev.cloneWith({
-            previewUrl: url,
-            results: ['사과', '복숭아', '자두']
-        }));
-        return () => URL.revokeObjectURL(url);
-    }, [scanner.file]);
-
     const updateField = (field, value) => {
         setCurrentIngredient(prev => prev.cloneWith({ [field]: value }));
     };
 
+    const closeModal = useCallback(() => {
+        visionFileIdRef.current = null;
+        setVisionRecognitionError("");
+        setModalMode(ModalModes.close);
+    }, []);
+
     function onSelectImgScanResult(selected) {
-        setScanner(prev => prev.reset());
-        updateField('name', selected);
+        setScanner((prev) => prev.cloneWith({ results: [] }));
+        const inferredCatId = inferCategoryIdFromIngredientName(selected, categories);
+        setCurrentIngredient((prev) => {
+            let next = prev.cloneWith({ name: selected });
+            if (inferredCatId != null) {
+                next = next.cloneWith({ categoryId: inferredCatId });
+            }
+            return next;
+        });
     }
 
     const handleConfirm = async () => {
         try {
-            const dto = toApiDto(currentIngredient);
+            const dto = toApiDto(currentIngredient, visionFileIdRef.current);
             if (modalMode === ModalModes.add) {
                 await fridgeApi.addIngredient(dto);
             } else if (modalMode === ModalModes.edit && editIdx !== null) {
@@ -184,10 +248,10 @@ export default function FridgePage() {
             }
             await fetchIngredients();
             await fetchSummary();
+            closeModal();
         } catch (err) {
             console.error("식재료 저장 실패:", err);
         }
-        setModalMode(ModalModes.close);
     };
 
     const handleClickDelete = async (ingredient) => {
@@ -201,39 +265,23 @@ export default function FridgePage() {
     };
 
     function getRecipeList() {
-        const url = TestImg.src || TestImg; // static import된 이미지는 이미 URL 정보를 가지고 있습니다.
+        const url = TestImg.src || TestImg;
         return ([
-            {
-                name: "레시피 1",
-                time: "30분",
-                difficulty: "쉬움",
-                imageURL: url,
-            },
-            {
-                name: "레시피 1",
-                time: "30분",
-                difficulty: "쉬움",
-                imageURL: url,
-            },
-            {
-                name: "레시피 1",
-                time: "30분",
-                difficulty: "쉬움",
-                imageURL: url,
-            }
+            { name: "레시피 1", time: "30분", difficulty: "쉬움", imageURL: url },
+            { name: "레시피 1", time: "30분", difficulty: "쉬움", imageURL: url },
+            { name: "레시피 1", time: "30분", difficulty: "쉬움", imageURL: url },
         ]);
     }
 
-    // 보관 장소 타입별로 카드를 생성하기 위한 배열 정의
     const storageCategories = Object.keys(StorageType).map(typeKey => ({
-        type: StorageType[typeKey], // 예: StorageType.REFRIGERATED
-        title: StorageType2Kor[typeKey], // 예: "냉장"
+        type: StorageType[typeKey],
+        title: StorageType2Kor[typeKey],
     }));
 
     return (
         <PrivateLayout>
             <Section>
-                {/* 냉장고 현황 카드 (모든 재료 표시) */}
+                {/* 냉장고 현황 카드 */}
                 <Card style={{ backgroundColor: "var(--border)" }}>
                     <div className="flex flex-row justify-between items-center mb-4">
                         <div className="flex flex-col">
@@ -241,12 +289,13 @@ export default function FridgePage() {
                             <SubTitle>현재 냉장고에 있는 재료들을 확인하세요</SubTitle>
                         </div>
                         <Button handleClick={() => {
+                            visionFileIdRef.current = null;
+                            setVisionRecognitionError("");
                             setCurrentIngredient(new Ingredient());
                             setScanner(new ImageScanner());
                             setModalMode(ModalModes.add);
                         }}>식재료 추가</Button>
                     </div>
-                    {/* 신선도 요약 통계 (규정: 신선도규칙_확정표_초안.md §요약집계) */}
                     {summary && (
                         <div className="mb-4">
                             <div className="flex flex-row gap-4 mb-3 text-sm">
@@ -267,6 +316,8 @@ export default function FridgePage() {
                                                     className="flex flex-row justify-between items-center cursor-pointer hover:opacity-70 rounded px-1 py-0.5 transition-opacity"
                                                     onClick={() => {
                                                         if (ingredient) {
+                                                            visionFileIdRef.current =
+                                                                ingredient.visionFileId ?? null;
                                                             setCurrentIngredient(ingredient);
                                                             setScanner(new ImageScanner());
                                                             setEditIdx(storage.indexOf(ingredient));
@@ -288,6 +339,8 @@ export default function FridgePage() {
                         {storage.map((each, idx) => (
                             <IngredientComponent
                                 key={each.id ?? idx}
+                                ingredientId={each.id}
+                                imageUrl={fileAssetPublicUrl(each.imageStoragePath, each.imageStoredName)}
                                 name={each.name}
                                 description="식재료 메모"
                                 expires={each.expire}
@@ -307,7 +360,7 @@ export default function FridgePage() {
                     </div>
                 </Card>
 
-                {/* 보관 장소 타입별 재료 표시 (반복문 사용) */}
+                {/* 보관 장소 타입별 재료 표시 */}
                 {storageCategories.map((category) => (
                     <Card key={category.type}>
                         <div className="flex flex-col mb-4">
@@ -320,6 +373,8 @@ export default function FridgePage() {
                                 .map((each, idx) => (
                                     <IngredientComponent
                                         key={each.id ?? idx}
+                                        ingredientId={each.id}
+                                        imageUrl={fileAssetPublicUrl(each.imageStoragePath, each.imageStoredName)}
                                         name={each.name}
                                         description="식재료 메모"
                                         expires={each.expire}
@@ -329,6 +384,7 @@ export default function FridgePage() {
                                         freshnessStatus={each.freshnessStatus}
                                         handleClickDelete={() => handleClickDelete(each)}
                                         handleClickEdit={() => {
+                                            visionFileIdRef.current = each.visionFileId ?? null;
                                             setCurrentIngredient(each);
                                             setScanner(new ImageScanner());
                                             setEditIdx(storage.indexOf(each));
@@ -357,60 +413,162 @@ export default function FridgePage() {
                     </div>
                 </Card>
 
-                {/* Modal 컴포넌트는 변경 없음 */}
                 <Modal
                     title={modalMode === ModalModes.add ? "재료 추가" : "재료 수정"}
                     isOpen={modalMode !== ModalModes.close}
-                    onClose={() => setModalMode(ModalModes.close)}
+                    onClose={closeModal}
                     onConfirm={handleConfirm}
                     confirmText={modalMode === ModalModes.add ? "추가" : "수정"}>
                     <div className="flex flex-col gap-4">
+                        {!scanner.previewUrl &&
+                            (currentIngredient.imageStoragePath ||
+                                currentIngredient.imageStoredName) && (
+                                <div
+                                    className="overflow-hidden rounded-2xl border bg-gray-50"
+                                    style={{ borderColor: "var(--border)" }}
+                                >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={fileAssetPublicUrl(
+                                            currentIngredient.imageStoragePath,
+                                            currentIngredient.imageStoredName
+                                        )}
+                                        alt=""
+                                        className="mx-auto max-h-[min(22rem,55vh)] w-full object-contain"
+                                    />
+                                </div>
+                            )}
                         {scanner.previewUrl ? (
-                            <div className="w-full overflow-hidden rounded-2xl relative bg-gray-100 flex flex-col">
-                                <div className="w-full h-48 relative">
-                                    <img src={scanner.previewUrl} alt="preview" className="w-full h-full object-contain" />
+                            <div className="flex w-full flex-col overflow-hidden rounded-2xl bg-gray-100">
+                                <div className="relative min-h-[14rem] w-full">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={scanner.previewUrl}
+                                        alt="인식 미리보기"
+                                        className="mx-auto max-h-[min(22rem,50vh)] min-h-[12rem] w-full object-contain"
+                                    />
                                     <button
                                         type="button"
-                                        onClick={() => setScanner(prev => prev.reset())}
-                                        className="absolute top-2 right-2 bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center"
-                                    >×</button>
+                                        onClick={() => {
+                                            visionFileIdRef.current = null;
+                                            setVisionRecognitionError("");
+                                            setScanner((prev) => {
+                                                if (prev.previewUrl?.startsWith("blob:")) {
+                                                    URL.revokeObjectURL(prev.previewUrl);
+                                                }
+                                                return prev.reset();
+                                            });
+                                            setCurrentIngredient((prev) =>
+                                                prev.cloneWith({ visionFileId: null })
+                                            );
+                                        }}
+                                        className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white"
+                                    >
+                                        ×
+                                    </button>
                                 </div>
-                                <div className="flex flex-row w-full p-2 gap-2 bg-white/80 border-t">
-                                    {scanner.results.map((result, idx) => (
-                                        <Button key={idx} is_full="true" variant="primary" size="sm" handleClick={() => onSelectImgScanResult(result)}>
-                                            {result}
-                                        </Button>
-                                    ))}
-                                </div>
+                                {scanner.results.length > 0 ? (
+                                    <div className="flex w-full flex-row flex-wrap gap-2 border-t border-black/5 bg-white/90 p-3">
+                                        {scanner.results.map((row, idx) => (
+                                            <Button
+                                                key={idx}
+                                                is_full="true"
+                                                variant="primary"
+                                                size="sm"
+                                                handleClick={() => onSelectImgScanResult(row.pickName)}
+                                            >
+                                                <span className="flex flex-col items-center gap-0.5 leading-tight">
+                                                    <span>{row.pickName}</span>
+                                                    <span className="text-xs font-normal opacity-90">
+                                                        {row.pct != null ? `${row.pct}%` : "—"}
+                                                    </span>
+                                                </span>
+                                            </Button>
+                                        ))}
+                                    </div>
+                                ) : null}
                             </div>
-                        ) : (
-                            <div className="flex flex-row gap-2 items-end">
-                                <InputText
-                                    is_full="true"
-                                    placeholder="재료 이름"
-                                    setText={currentIngredient.name}
-                                    getText={(val) => updateField('name', val)}
-                                />
-                                <Button is_square="true" is_full="true" variant="accent" handleClick={() => fileInputRef.current?.click()}>
-                                    이미지 인식
-                                </Button>
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={(e) => {
-                                        const file = e.target.files[0];
-                                        if (file) setScanner(prev => prev.cloneWith({ file }));
-                                    }}
-                                />
-                            </div>
-                        )}
-                        <InputDate
-                            placeholder="유통기한"
-                            setText={currentIngredient.expire}
-                            getText={(val) => updateField('expire', val)}
+                        ) : null}
+                        <InputText
+                            is_full="true"
+                            placeholder="재료 이름"
+                            setText={currentIngredient.name}
+                            getText={(val) => updateField("name", val)}
                         />
+                        <div className="flex flex-row flex-wrap items-center gap-2">
+                            <Button
+                                is_square="true"
+                                is_full="true"
+                                variant="accent"
+                                handleClick={() => fileInputRef.current?.click()}
+                            >
+                                {modalMode === ModalModes.edit &&
+                                (currentIngredient.imageStoragePath ||
+                                    currentIngredient.imageStoredName ||
+                                    scanner.previewUrl)
+                                    ? "이미지 수정"
+                                    : "이미지 인식"}
+                            </Button>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept="image/*"
+                                onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    setVisionRecognitionError("");
+                                    const previewUrl = URL.createObjectURL(file);
+                                    setScanner((prev) => {
+                                        if (prev.previewUrl?.startsWith("blob:")) {
+                                            URL.revokeObjectURL(prev.previewUrl);
+                                        }
+                                        return prev.cloneWith({ file, previewUrl, results: [] });
+                                    });
+                                    try {
+                                        const res = await fridgeApi.recognizeIngredientImage(file, 3);
+                                        const payload = res.data?.data;
+                                        const candidates =
+                                            payload?.recognizedCandidates ?? [];
+                                        const results = mapVisionCandidatesForUi(candidates);
+                                        setScanner((prev) =>
+                                            prev.cloneWith({ file, previewUrl, results })
+                                        );
+                                        let fid =
+                                            payload?.fileId ??
+                                            payload?.file_id ??
+                                            payload?.imageFileId;
+                                        if (typeof fid === "string" && /^\d+$/.test(fid)) {
+                                            fid = Number(fid);
+                                        }
+                                        if (typeof fid === "number" && Number.isFinite(fid) && fid > 0) {
+                                            visionFileIdRef.current = fid;
+                                            setCurrentIngredient((prev) =>
+                                                prev.cloneWith({ visionFileId: fid })
+                                            );
+                                        }
+                                    } catch (err) {
+                                        console.error("이미지 인식 실패:", err);
+                                        setVisionRecognitionError(
+                                            "이미지 인식에 실패했습니다. 서버·네트워크 상태를 확인하거나, 재료 이름을 직접 입력해 주세요."
+                                        );
+                                        visionFileIdRef.current = null;
+                                        setScanner((prev) =>
+                                            prev.cloneWith({ file, previewUrl, results: [] })
+                                        );
+                                        setCurrentIngredient((prev) =>
+                                            prev.cloneWith({ visionFileId: null })
+                                        );
+                                    }
+                                    e.target.value = "";
+                                }}
+                            />
+                        </div>
+                        {visionRecognitionError ? (
+                            <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                                {visionRecognitionError}
+                            </p>
+                        ) : null}
                         <Select
                             placeholder="카테고리 선택"
                             options={categories.map(cat => ({
@@ -436,7 +594,6 @@ export default function FridgePage() {
                             setText={currentIngredient.qty}
                             getText={(val) => updateField('qty', val)}
                         />
-
                     </div>
                 </Modal>
             </Section>

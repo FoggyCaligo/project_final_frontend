@@ -1,27 +1,16 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1",
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
+    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
+    withCredentials: true,
+    headers: {
+        "Content-Type": "application/json",
+    },
 });
-
-const getAccessToken = () => {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  return window.localStorage.getItem("accessToken");
-};
 
 api.interceptors.request.use(
   (config) => {
-    const token = getAccessToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    config.headers["X-User-Id"] = "1"; // 백엔드1 임시 인증용 헤더 (개발용)
+    // 서버가 HTTP-only 쿠키(accessToken)로 인증 → UserIdResolutionFilter가 JWT에서 X-User-Id를 자동 주입
     return config;
   },
   (error) => Promise.reject(error)
