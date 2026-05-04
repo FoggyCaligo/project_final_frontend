@@ -19,27 +19,27 @@ export default function CommunityRegisterPage() {
     const [recipe, setRecipe] = useState(""); 
     const [bookmarkedRecipes, setBookmarkedRecipes] = useState([]); 
     const [recentPosts, setRecentPosts] = useState([]); 
-    // 로딩 상태 (기본값: false)
     const [isLoading, setIsLoading] = useState(false);   
 
-    // 현재 임시로 사용하는 로그인 유저 ID
+    // 💡 테스트용 로그인 유저 ID 1로 복구
     const currentUserId = 1;
     const router = useRouter();
     
     useEffect(() => {
-        // 통합 데이터 로드 함수 (북마크 & 유저 작성 게시글)
         const fetchInitialData = async () => {
             try {
                 // 1. 북마크 데이터 로드
                 const bookmarkData = await getBookmarkedRecipes(currentUserId);
                 setBookmarkedRecipes(bookmarkData);
+                
+                // 💡 첫 번째 항목 자동 선택 적용 (선택하지 않음 옵션 제거에 따른 조치)
                 if (bookmarkData && bookmarkData.length > 0) {
                     setRecipe(bookmarkData[0].recipeId.toString());
                 }
     
                 // 2. 최근 작성 게시글 데이터 로드
                 const postData = await getUserPosts(currentUserId);
-                setRecentPosts(postData);
+                setRecentPosts(postData || []); 
             } catch (error) {
                 console.error("초기 데이터를 불러오지 못했습니다.", error);
             }
@@ -52,7 +52,6 @@ export default function CommunityRegisterPage() {
         };
     }, []);
     
-    // DB의 storage_path와 stored_name을 조합하여 웹 URL을 생성하는 유틸 함수
     const getImageUrl = (storagePath, storedName) => {
         if (!storedName) return placeholderSvg;
         return `http://43.201.1.45/uploads/community/${storedName}`;
@@ -75,7 +74,6 @@ export default function CommunityRegisterPage() {
     };
 
     const handleSubmit = async () => {
-        // 💡 이미 처리 중이라면 버튼을 여러 번 눌러도 무시하도록 처리
         if (isLoading) return;
 
         if (images.length === 0) {
@@ -83,11 +81,14 @@ export default function CommunityRegisterPage() {
             return;
         }
 
-        // 💡 API 통신 시작 직전에 로딩 상태를 true로 변경
+        if (!recipe) {
+            alert("북마크한 레시피를 선택해주세요.");
+            return;
+        }
+
         setIsLoading(true);
 
         try {
-            // Step 1. PHP 서버로 이미지 업로드 요청
             const formData = new FormData();
             formData.append('title', title);
             formData.append('content', content);
@@ -97,22 +98,19 @@ export default function CommunityRegisterPage() {
                 formData.append('images[]', img.file);
             });
 
-            // axios 기반의 모듈화된 API 호출
             const uploadResult = await uploadImages(formData);
 
             if (uploadResult.success) {
                 console.log(`[Upload Success] ${uploadResult.uploaded_count}개의 이미지 업로드 완료`);
 
-                // Step 2. Spring Boot 서버로 메타데이터 및 게시글 정보 전송
                 const finalPostData = {
-                    userId: 1, // 테스트용 임시 유저 ID
+                    userId: currentUserId,
                     title: title,
                     content: content,
-                    recipe: recipe, // 테스트용 임시 레시피 ID
+                    recipe: recipe,
                     image_files: uploadResult.data
                 };
 
-                // axios 기반의 모듈화된 API 호출
                 const dbResult = await createPost(finalPostData);
 
                 if (dbResult.success) {
@@ -129,7 +127,6 @@ export default function CommunityRegisterPage() {
             const errorMessage = error.message || "네트워크 오류가 발생했습니다.";
             alert(`오류가 발생했습니다: ${errorMessage}`);
         } finally {
-            // 💡 통신이 성공하든 에러가 나든 마지막에는 무조건 로딩 상태를 꺼줌
             setIsLoading(false);
         }
     };
@@ -198,6 +195,7 @@ export default function CommunityRegisterPage() {
                                 value={recipe}
                                 onChange={(e) => setRecipe(e.target.value)}
                             >
+                                {/* 💡 '선택하지 않음' 옵션 제거 완료 */}
                                 {bookmarkedRecipes.length > 0 ? (
                                     bookmarkedRecipes.map((item) => (
                                         <option key={item.recipeId} value={item.recipeId}>
@@ -262,7 +260,6 @@ export default function CommunityRegisterPage() {
                         </div>
 
                         <div className="flex flex-wrap gap-2 mt-5">
-                            {/* 💡 로딩 상태에 따라 버튼 내용 및 클릭 제어 적용 */}
                             <Button 
                                 variant="primary" 
                                 handleClick={handleSubmit}
@@ -336,7 +333,6 @@ export default function CommunityRegisterPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* 💡 배열 순회를 할 때 .slice(0, 4)를 붙여 최대 4개까지만 자릅니다. */}
                     {recentPosts.length > 0 ? (
                         recentPosts.slice(0, 4).map((post, index) => (
                             <PostCard
