@@ -15,7 +15,10 @@ export default function Recipe({
     difficulty,
     imageURL,
     handleClick,
-
+    llmExplanation,
+    semanticScore,
+    tagScore,
+    hybridScore,
     variant = "list",
     matchRate,
     reason,
@@ -178,10 +181,22 @@ export default function Recipe({
                                 💡 {reason}
                             </div>
                         )}
+                        {llmExplanation && (
+                            <div className="rounded-xl bg-white/70 p-3 text-sm text-gray-700 leading-relaxed">
+                                <div className="mb-1 text-xs font-semibold text-gray-500">
+                                    AI 추천 설명
+                                </div>
+                                {llmExplanation}
+                            </div>
+                        )}
 
                     </>
                 )}
-
+                {variant === "recommend" && (
+                    <div className="text-[11px] text-gray-400">
+                        semantic {semanticScore ?? "-"} · tag {tagScore ?? "-"} · hybrid {hybridScore ?? "-"}
+                    </div>
+                )}
                 <Button
                     is_full={true}
                     variant="secondary"

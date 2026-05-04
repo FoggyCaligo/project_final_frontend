@@ -69,14 +69,20 @@ export default function ChatPage() {
                             <Recipe
                                 key={recipe.recipeId}
                                 name={recipe.title}
-                                time="20분"
-                                difficulty="보통"
+                                time={recipe.cookTimeText || "정보 없음"}
+                                difficulty={recipe.summary || "보통"}
                                 imageURL={recipe.thumbnailUrl}
                                 variant="recommend"
                                 matchRate={recipe.matchRate}
                                 reason={recipe.reason}
                                 conditionTags={recipe.conditionTags}
                                 missingIngredients={recipe.missingIngredients}
+                                substituteSuggestions={recipe.substituteSuggestions}
+                                warnings={recipe.warnings}
+                                llmExplanation={recipe.llmExplanation}
+                                semanticScore={recipe.semanticScore}
+                                tagScore={recipe.tagScore}
+                                hybridScore={recipe.hybridScore}
                             />
                         ))}
                     </div>

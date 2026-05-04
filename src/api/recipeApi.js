@@ -1,8 +1,12 @@
 import api from "@/config/axios";
 
-export const getAllRecipes = async () => {
-    const response = await api.get("/recipes");
-    return response.data.data.content;
+export const getAllRecipes = async (page = 0, size = 12) => {
+    const response = await api.get("/recipes", {
+        params: { page, size },
+    });
+
+    return response.data.data;
+    // PageResult 전체 반환: content, totalPages, totalElements 등
 };
 
 export const getRecipeDetail = async (id) => {

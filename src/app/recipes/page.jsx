@@ -6,19 +6,28 @@ import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import Section from "@/components/ui/Section";
 import Recipe from "@/components/ui/Recipe";
 import { useRouter } from "next/navigation";
+import Pagination from "@/components/ui/Pagination";
 
 export default function RecipesPage() {
     const router = useRouter();
     const [recipes, setRecipes] = useState([]);
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
 
     useEffect(() => {
         const fetchRecipes = async () => {
-            const data = await getAllRecipes();
-            setRecipes(data);
+            try {
+                const result = await getAllRecipes(page, 12);
+                setRecipes(result.content);
+                setTotalPages(result.pageInfo.totalPages);
+                console.log(result);
+            } catch (e) {
+                console.error(e);
+            }
         };
 
         fetchRecipes();
-    }, []);
+    }, [page]);
 
     return (
         <PrivateLayout>
@@ -37,6 +46,11 @@ export default function RecipesPage() {
                         />
                     ))}
                 </div>
+                <Pagination
+                    page={page + 1}
+                    totalPages={totalPages}
+                    onPageChange={(p) => setPage(p - 1)}
+                />
             </Section>
         </PrivateLayout>
     )
