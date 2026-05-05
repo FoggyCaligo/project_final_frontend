@@ -66,3 +66,19 @@ export const getPostReportStatus = async (postId, userId) => {
     const response = await api.get(`/v1/posts/${postId}/reports/status?userId=${userId}`);
     return response.data;
 };
+
+// 💡 사용자 팔로우 관련 API (Git 충돌 방지를 위해 postApi.js 에서 관리)
+export const addFollow = async (followeeId, followerId) => {
+    const response = await api.post(`/v1/users/${followeeId}/follow?followerId=${followerId}`);
+    return response.data;
+};
+
+export const removeFollow = async (followeeId, followerId) => {
+    const response = await api.delete(`/v1/users/${followeeId}/follow?followerId=${followerId}`);
+    return response.data;
+};
+
+export const checkFollowStatus = async (followeeId, followerId) => {
+    const response = await api.get(`/v1/users/${followeeId}/follow/status?followerId=${followerId}`);
+    return response.data;
+};
