@@ -2,6 +2,17 @@ import { render, screen, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 
+// Next.js 라우터 모킹
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(() => ({ push: jest.fn(), replace: jest.fn() })),
+  usePathname: jest.fn(() => '/'),
+}));
+
+// getMeApi 모킹 (login()이 내부적으로 호출)
+jest.mock('@/api/authApi', () => ({
+  getMeApi: jest.fn().mockResolvedValue({ loginId: 'testuser1', nickname: 'testuser1', userId: 1 }),
+}));
+
 // AuthContext를 소비하는 테스트용 컴포넌트
 function TestConsumer() {
   const { user, login, logout } = useAuth();
@@ -47,8 +58,10 @@ describe('AuthContext', () => {
 
     await user.click(screen.getByText('login-general'));
 
-    expect(screen.getByTestId('loginId')).toHaveTextContent('testuser1');
-    expect(screen.getByTestId('loginType')).toHaveTextContent('general');
+    await waitFor(() => {
+      expect(screen.getByTestId('loginId')).toHaveTextContent('testuser1');
+      expect(screen.getByTestId('loginType')).toHaveTextContent('general');
+    });
   });
 
   test('login() 호출 시 sessionStorage에 authUser가 저장된다', async () => {
@@ -57,8 +70,10 @@ describe('AuthContext', () => {
 
     await user.click(screen.getByText('login-general'));
 
-    const stored = JSON.parse(sessionStorage.getItem('authUser'));
-    expect(stored).toEqual({ loginId: 'testuser1', loginType: 'general' });
+    await waitFor(() => {
+      const stored = JSON.parse(sessionStorage.getItem('authUser'));
+      expect(stored).toMatchObject({ loginId: 'testuser1', loginType: 'general' });
+    });
   });
 
   test('login() 호출 시 kakao 타입으로도 저장된다', async () => {
@@ -67,9 +82,11 @@ describe('AuthContext', () => {
 
     await user.click(screen.getByText('login-kakao'));
 
-    expect(screen.getByTestId('loginType')).toHaveTextContent('kakao');
-    const stored = JSON.parse(sessionStorage.getItem('authUser'));
-    expect(stored.loginType).toBe('kakao');
+    await waitFor(() => {
+      expect(screen.getByTestId('loginType')).toHaveTextContent('kakao');
+      const stored = JSON.parse(sessionStorage.getItem('authUser'));
+      expect(stored.loginType).toBe('kakao');
+    });
   });
 
   // ===== logout =====
@@ -89,6 +106,7 @@ describe('AuthContext', () => {
     setup();
 
     await user.click(screen.getByText('login-general'));
+    await waitFor(() => expect(sessionStorage.getItem('authUser')).not.toBeNull());
     await user.click(screen.getByText('logout'));
 
     expect(sessionStorage.getItem('authUser')).toBeNull();

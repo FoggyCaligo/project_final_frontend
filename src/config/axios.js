@@ -56,6 +56,12 @@ api.interceptors.response.use(
       error?.message ??
       "Unexpected API error";
 
+    // 401: 액세스 토큰 만료 → 세션 초기화 후 AuthContext에 알림
+    if (status === 401 && typeof window !== "undefined") {
+      sessionStorage.removeItem("authUser");
+      window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+    }
+
     const normalizedError = {
       name: "ApiError",
       message,
