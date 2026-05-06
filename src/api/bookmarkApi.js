@@ -2,7 +2,7 @@ import api from "@/config/axios";
 import { unwrapApiData } from "@/api/utils";
 
 export const getBookmarkedRecipes = async (userId) => {
-    const response = await api.get(`/bookmarks/${userId}`);
+    const response = await api.get(`/v1/bookmarks/${userId}`);
     return unwrapApiData(response, []);
 };
 export const addBookmark = async (recipeId, userId)=>{
