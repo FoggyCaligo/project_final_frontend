@@ -5,5 +5,5 @@ export const getRecommendations = async (page = 0, size = 9) => {
         params: { page, size },
     });
 
-    return response.data.data;
+    return response.data?.data ?? response.data;
 };
