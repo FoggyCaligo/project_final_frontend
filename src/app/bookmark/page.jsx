@@ -70,7 +70,6 @@ export default function BookMark() {
                             difficulty={recipe.difficultyLevel || "정보 없음"}
                             
                             imageURL={recipe.thumbnailUrl}
-                            initialBookmarked={true}
                             onBookmarkToggle={(nextBookmarked) => {
                                 if (!nextBookmarked) {
                                     setBookmarkedRecipes((prev) =>
