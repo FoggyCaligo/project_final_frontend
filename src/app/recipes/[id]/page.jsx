@@ -1,6 +1,7 @@
 
 import RecipeDetailInfoTable from "@/components/recipe-detail/RecipeDetailInfoTable";
 import RecipeDetailStep from "@/components/recipe-detail/RecipeDetailStep";
+import MissingIngredientsPrices from "@/components/recipe-detail/MissingIngredientsPrices";
 import styles from "./RecipeDetail.module.css";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import { getRecipeDetail } from "@/api/recipeApi";
@@ -90,6 +91,8 @@ export default async function RecipeDetailPage({ params }) {
               columns={2}
               renderValue={(item) => item.isStars ? renderStars(item.value) : item.value}
             />
+
+            <MissingIngredientsPrices recipeId={recipeData.recipeId} />
           </div>
 
           {/* Right Column */}
