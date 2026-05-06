@@ -8,6 +8,20 @@ const api = axios.create({
   },
 });
 
+const RETRYABLE_NETWORK_CODE = "ERR_NETWORK";
+const MAX_NETWORK_RETRIES = 2;
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableNetworkError(error) {
+  return (
+    error?.code === RETRYABLE_NETWORK_CODE &&
+    !error?.response
+  );
+}
+
 api.interceptors.request.use(
   (config) => {
     // 서버가 HTTP-only 쿠키(accessToken)로 인증 → UserIdResolutionFilter가 JWT에서 X-User-Id를 자동 주입
@@ -18,13 +32,30 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const config = error?.config;
+
+    if (config && isRetryableNetworkError(error)) {
+      const retryCount = config.__networkRetryCount ?? 0;
+
+      if (retryCount < MAX_NETWORK_RETRIES) {
+        config.__networkRetryCount = retryCount + 1;
+
+        // 1st retry: 300ms, 2nd retry: 800ms
+        const backoffMs = retryCount === 0 ? 300 : 800;
+        await delay(backoffMs);
+
+        return api(config);
+      }
+    }
+
     const status = error?.response?.status;
     const data = error?.response?.data;
     const message =
       data?.message ??
       error?.message ??
       "Unexpected API error";
+
     const normalizedError = {
       name: "ApiError",
       message,
