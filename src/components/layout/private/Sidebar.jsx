@@ -9,10 +9,12 @@ export default function Sidebar() {
     const menus = [
         { name: "대시보드", path: "/dashboard" },
         { name: "재료 관리", path: "/fridge" },
+        { name: "북마크", path: "/bookmark" },
         { name: "전체레시피", path: "/recipes" },
         { name: "추천레시피", path: "/recommendations" },
         { name: "커뮤니티", path: "/community" },
         { name: "마이페이지", path: "/mypage" },
+        { name: "최저가 비교", path: "/ingredients-price" },
     ];
 
     return (

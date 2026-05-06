@@ -1,6 +1,9 @@
 import Button from "./Button";
+import BookMarkButton from "./BookMarkButton";
 import CustomTag from "./Tag";
 import { Tooltip } from "antd";
+import { addBookmark, removeBookmark } from "@/api/bookmarkApi";
+import { getMeApi, user } from "@/api/authApi";
 
 const conditionTagMap = {
     DIABETES_LOW_SUGAR: { label: "당뇨 주의", variant: "accent" },
@@ -10,22 +13,52 @@ const conditionTagMap = {
 };
 
 export default function Recipe({
+    recipeId,
     name,
     time,
     difficulty,
     imageURL,
     handleClick,
-
+    llmExplanation,
+    semanticScore,
+    tagScore,
+    hybridScore,
     variant = "list",
     matchRate,
     reason,
     conditionTags = [],
     missingIngredients = [],
     substituteSuggestions = [],
-    warnings = []
+    warnings = [],
+    initialBookmarked = false,
+    onBookmarkToggle
 }) {
-
     const firstSubstitute = substituteSuggestions[0];
+    const handleBookmarkToggle = async (nextBookmarked) => {
+        try {
+            if (!recipeId) return false;
+
+            let loginId = user?.loginId;
+            if (!loginId) {
+                const me = await getMeApi();
+                loginId = me?.loginId;
+            }
+            if (!loginId) return false;
+
+            if (nextBookmarked === false) {
+                await removeBookmark(recipeId, loginId);
+                onBookmarkToggle?.(false);
+                return false;
+            }
+
+            await addBookmark(recipeId, loginId);
+            onBookmarkToggle?.(true);
+            return true;
+        } catch (error) {
+            console.error("북마크 토글 실패:", error);
+            return false;
+        }
+    };
 
     return (
         <div className="w-full overflow-hidden rounded-2xl bg-gray-100 border border-gray-100 flex flex-col">
@@ -178,17 +211,34 @@ export default function Recipe({
                                 💡 {reason}
                             </div>
                         )}
+                        {llmExplanation && (
+                            <div className="rounded-xl bg-white/70 p-3 text-sm text-gray-700 leading-relaxed">
+                                <div className="mb-1 text-xs font-semibold text-gray-500">
+                                    AI 추천 설명
+                                </div>
+                                {llmExplanation}
+                            </div>
+                        )}
 
                     </>
                 )}
-
-                <Button
-                    is_full={true}
-                    variant="secondary"
-                    handleClick={handleClick}
-                >
-                    레시피 보기
-                </Button>
+                <div className="flex flex-row items-center gap-2">                {variant === "recommend" && (
+                    <div className="text-[11px] text-gray-400">
+                        semantic {semanticScore ?? "-"} · tag {tagScore ?? "-"} · hybrid {hybridScore ?? "-"}
+                    </div>
+                )}
+                    <Button
+                        is_full={true}
+                        variant="secondary"
+                        handleClick={handleClick}
+                    >
+                        레시피 보기
+                    </Button>
+                    <BookMarkButton
+                        initialBookmarked={initialBookmarked}
+                        onToggle={handleBookmarkToggle}
+                    />
+                </div>
 
             </div>
         </div>

@@ -1,13 +1,9 @@
 import api from "@/config/axios";
 
-const toRecommendationList = (payload) => {
-    if (Array.isArray(payload)) return payload;
-    if (Array.isArray(payload?.content)) return payload.content;
-    if (Array.isArray(payload?.items)) return payload.items;
-    return [];
-};
+export const getRecommendations = async (page = 0, size = 9) => {
+    const response = await api.get("/recipes/recommendations", {
+        params: { page, size },
+    });
 
-export const getRecommendations = async () => {
-    const response = await api.get("/recipes/recommendations");
-    return toRecommendationList(response.data?.data ?? response.data);
+    return response.data.data;
 };
