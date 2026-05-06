@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function BookMarkButton({
     initialBookmarked = false,
@@ -6,6 +6,10 @@ export default function BookMarkButton({
 }) {
     const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        setIsBookmarked(initialBookmarked);
+    }, [initialBookmarked]);
 
     const handleToggle = async () => {
         if (isSubmitting) return;
