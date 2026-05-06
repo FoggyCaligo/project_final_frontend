@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Tag from "@/components/ui/Tag";
 
@@ -9,13 +10,41 @@ const FRESHNESS_BADGE = {
     FRESH:    null,
 };
 
-export default function Ingredient({ children, variant = "primary", handleClickDelete, handleClickEdit, name, description, expires, qty, storageType, category, freshnessStatus }) {
+export default function Ingredient({
+    ingredientId,
+    children,
+    variant = "primary",
+    handleClickDelete,
+    handleClickEdit,
+    name,
+    description,
+    expires,
+    qty,
+    storageType,
+    category,
+    freshnessStatus,
+    imageUrl,
+}) {
     const badge = FRESHNESS_BADGE[freshnessStatus] ?? null;
 
     return (
-        <div className="flex flex-row justify-between items-center p-2 rounded-2xl border" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--border)" }}>
-            <div className="flex-col ml-4">
-                <div className="text-lg font-bold">{name}</div>
+        <div className="flex flex-row justify-between items-center p-2 rounded-2xl border gap-3" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--border)" }}>
+            {imageUrl ? (
+                <div className="shrink-0 h-16 w-16 overflow-hidden rounded-xl border bg-gray-100" style={{ borderColor: "var(--border)" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                </div>
+            ) : null}
+            <div className="min-w-0 flex-1 flex-col ml-0 sm:ml-1">
+                <div className="text-lg font-bold">
+                    {ingredientId != null ? (
+                        <Link href={`/fridge/${ingredientId}`} className="hover:underline">
+                            {name}
+                        </Link>
+                    ) : (
+                        name
+                    )}
+                </div>
                 <div className="text-sm text-gray-600">
                     {description} {" . "} {expires}
                     {category && <>{" . "}{category}</>}

@@ -2,6 +2,7 @@ import api from "@/config/axios";
 
 export const fridgeApi = {
     getIngredients: () => api.get("/v1/fridge/ingredients"),
+    getIngredient: (id) => api.get(`/v1/fridge/ingredients/${id}`),
     getSummary: () => api.get("/v1/fridge/summary"),
     getCategories: () => api.get("/v1/fridge/categories"),
     addIngredient: (data) => api.post("/v1/fridge/ingredients", data),

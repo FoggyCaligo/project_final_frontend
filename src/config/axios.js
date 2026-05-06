@@ -1,12 +1,26 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
-    withCredentials: true,
-    headers: {
-        "Content-Type": "application/json",
-    },
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
+
+const RETRYABLE_NETWORK_CODE = "ERR_NETWORK";
+const MAX_NETWORK_RETRIES = 2;
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableNetworkError(error) {
+  return (
+    error?.code === RETRYABLE_NETWORK_CODE &&
+    !error?.response
+  );
+}
 
 api.interceptors.request.use(
   (config) => {
@@ -18,13 +32,30 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const config = error?.config;
+
+    if (config && isRetryableNetworkError(error)) {
+      const retryCount = config.__networkRetryCount ?? 0;
+
+      if (retryCount < MAX_NETWORK_RETRIES) {
+        config.__networkRetryCount = retryCount + 1;
+
+        // 1st retry: 300ms, 2nd retry: 800ms
+        const backoffMs = retryCount === 0 ? 300 : 800;
+        await delay(backoffMs);
+
+        return api(config);
+      }
+    }
+
     const status = error?.response?.status;
     const data = error?.response?.data;
     const message =
       data?.message ??
       error?.message ??
       "Unexpected API error";
+
     const normalizedError = {
       name: "ApiError",
       message,

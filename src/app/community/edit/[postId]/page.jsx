@@ -23,7 +23,8 @@ export default function CommunityEditPage() {
     const [bookmarkedRecipes, setBookmarkedRecipes] = useState([]); 
     const [isLoading, setIsLoading] = useState(false);
     
-    const currentUserId = 1; // 테스트용 임시 유저 ID
+    // 💡 테스트용 임시 유저 ID (등록 페이지와 동일하게 1로 설정)
+    const currentUserId = 1; 
     
     // 화면 로드 시 기존 게시글 정보와 북마크 목록을 가져옴
     useEffect(() => {
@@ -37,7 +38,13 @@ export default function CommunityEditPage() {
                 const postData = await getPostDetail(postId);
                 setTitle(postData.title);
                 setContent(postData.content);
-                setRecipe(postData.recipeId?.toString() || "");
+                
+                // 💡 기존 게시글의 레시피 세팅 (만약 없다면 북마크 목록의 첫 번째 레시피를 기본값으로 세팅)
+                if (postData.recipeId) {
+                    setRecipe(postData.recipeId.toString());
+                } else if (bookmarkData && bookmarkData.length > 0) {
+                    setRecipe(bookmarkData[0].recipeId.toString());
+                }
 
                 // 3. 기존 이미지 미리보기 설정 (isExisting 플래그와 storedName 저장)
                 if (postData.images && postData.images.length > 0) {
@@ -82,6 +89,18 @@ export default function CommunityEditPage() {
 
     const handleUpdate = async () => {
         if (isLoading) return;
+
+        // 💡 유효성 검사 추가 (이미지와 레시피 필수 선택)
+        if (images.length === 0) {
+            alert("이미지를 하나 이상 등록해주세요.");
+            return;
+        }
+
+        if (!recipe) {
+            alert("북마크한 레시피를 선택해주세요.");
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -184,15 +203,20 @@ export default function CommunityEditPage() {
                         <div className="flex flex-col gap-2 mb-4">
                             <label className="text-sm font-bold">북마크한 레시피 선택</label>
                             <select
-                                className="w-full min-h-[46px] px-4 border border-[var(--border)] rounded-xl bg-white"
+                                className="w-full min-h-[46px] px-4 border border-[var(--border)] rounded-xl bg-white focus:outline-none focus:border-[var(--primary)] transition"
                                 value={recipe}
                                 onChange={(e) => setRecipe(e.target.value)}
                             >
-                                {bookmarkedRecipes.map((item) => (
-                                    <option key={item.recipeId} value={item.recipeId}>
-                                        {item.recipeName}
-                                    </option>
-                                ))}
+                                {/* 💡 등록 페이지와 동일하게 조건부 렌더링 적용 */}
+                                {bookmarkedRecipes.length > 0 ? (
+                                    bookmarkedRecipes.map((item) => (
+                                        <option key={item.recipeId} value={item.recipeId}>
+                                            {item.recipeName}
+                                        </option>
+                                    ))
+                                ) : (
+                                    <option value="" disabled>북마크한 레시피가 없습니다</option>
+                                )}
                             </select>
                         </div>
 
@@ -210,7 +234,7 @@ export default function CommunityEditPage() {
                         <div className="flex flex-col gap-2 mb-4">
                             <label className="text-sm font-bold">후기 내용</label>
                             <textarea
-                                className="w-full min-h-[140px] p-4 border border-[var(--border)] rounded-xl bg-white focus:outline-none focus:border-[var(--primary)] transition resize-y"
+                                className="w-full min-h-[140px] p-4 border border-[var(--border)] rounded-xl bg-white focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)] focus:ring-opacity-15 transition resize-y"
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                             ></textarea>

@@ -7,7 +7,7 @@ import PropTypes from "prop-types";
 
 const AuthContext = createContext(null);
 
-// user 구조: { loginId: string, loginType: 'general' | 'kakao', nickname: string } | null
+// user 구조: { loginId: string, loginType: 'general' | 'kakao', nickname: string, userId: number | null } | null
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const router = useRouter();
@@ -28,15 +28,18 @@ export function AuthProvider({ children }) {
     }, []);
 
   // 로그인 성공 후 호출: getMeApi로 닉네임 조회 후 세션/상태 업데이트
-  const login = useCallback(async (loginId, loginType = "general") => {
-    let finalNickname = loginId;
+  const login = useCallback(async (loginId, loginType = "general", defaultNickname = null) => {
+    let finalNickname = defaultNickname || loginId;
+    let userId = null;
     try {
       const meRes = await getMeApi();
-      finalNickname = meRes.data?.data?.nickname ?? loginId;
+      const meData = meRes.data?.data;
+      finalNickname = meData?.nickname ?? finalNickname;
+      userId = meData?.userId ?? meData?.id ?? null;
     } catch (error) {
       console.warn("닉네임 정보를 가져오는 데 실패했습니다. loginId를 닉네임으로 사용합니다.", error);
     }
-    const userData = { loginId, loginType, nickname: finalNickname };
+    const userData = { loginId, loginType, nickname: finalNickname, userId };
     try {
       sessionStorage.setItem("authUser", JSON.stringify(userData));
     } catch (e) {
@@ -54,15 +57,17 @@ export function AuthProvider({ children }) {
 
         if (kakaoLogin === "success") {
       const loginId = params.get("loginId");
+      const nickname = params.get("nickname");
       if (loginId) {
         // login 함수를 호출하여 닉네임 조회 및 상태 업데이트 통합
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        login(loginId, "kakao");
+        login(loginId, "kakao", nickname).then(() => {
+          router.push("/dashboard");
+        });
+      } else {
+        router.push("/dashboard");
       }
-      // Next.js 라우터를 사용하여 안전하게 URL 파라미터 정리
-      router.replace(pathname);
         } else if (kakaoError) {
-      router.replace(pathname);
+      router.push("/");
         }
   }, [pathname, router, login]);
 
