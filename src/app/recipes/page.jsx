@@ -76,6 +76,7 @@ export default function RecipesPage() {
                     {recipes.map(recipe => (
                         <Recipe
                             key={recipe.recipeId}
+                            recipeId={recipe.recipeId}
                             name={recipe.title}
                             time={recipe.cookTimeText}
                             difficulty={recipe.difficultyLevel || "보통"}
