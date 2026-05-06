@@ -5,6 +5,17 @@ import { initialDashboardData } from "./constants";
 const getDashboardPayload = (response, fallback) => response?.data?.data ?? fallback;
 
 const toArray = (value) => (Array.isArray(value) ? value : []);
+const getRecommendationItems = (value) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (Array.isArray(value?.content)) {
+    return value.content;
+  }
+
+  return [];
+};
 
 function getIngredientItems(response) {
   const payload = getDashboardPayload(response, { items: [] });
@@ -46,9 +57,8 @@ export async function requestDashboardData() {
         : [],
     recipes:
       recommendationsResult.status === "fulfilled"
-        ? toArray(recommendationsResult.value)
+        ? getRecommendationItems(recommendationsResult.value)
         : [],
     errors,
   };
 }
-
