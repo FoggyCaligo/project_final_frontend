@@ -7,6 +7,7 @@ import { getBookmarkedRecipes } from "@/api/bookmarkApi";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import Recipe from "@/components/ui/Recipe";
 import Section from "@/components/ui/Section";
+import Loading from "@/components/ui/Loading";
 
 export default function BookMark() {
     const router = useRouter();
@@ -17,14 +18,16 @@ export default function BookMark() {
         const fetchBookmarkedRecipes = async () => {
             try {
                 const me = await getMeApi();
-                const loginId = me?.loginId;
+                const userId = me?.userId;
 
-                if (!loginId) {
+                if (!userId) {
                     setBookmarkedRecipes([]);
+                    console.log("no userId");
                     return;
                 }
 
-                const recipes = await getBookmarkedRecipes(loginId);
+                const recipes = await getBookmarkedRecipes(userId);
+                console.log("recipes",recipes);
                 setBookmarkedRecipes(recipes || []);
             } catch (err) {
                 console.error("API 에러:", err);
@@ -40,7 +43,8 @@ export default function BookMark() {
     if (loading) {
         return (
             <PrivateLayout>
-                <Section>북마크 레시피 불러오는 중...</Section>
+                <Section />
+                <Loading isOpen={true} text="북마크 레시피 불러오는 중..." />
             </PrivateLayout>
         );
     }
@@ -63,7 +67,8 @@ export default function BookMark() {
                             recipeId={recipe.recipeId}
                             name={recipe.title}
                             time={recipe.cookTimeText || "정보 없음"}
-                            difficulty={recipe.summary || "정보 없음"}
+                            difficulty={recipe.difficultyLevel || "정보 없음"}
+                            
                             imageURL={recipe.thumbnailUrl}
                             initialBookmarked={true}
                             onBookmarkToggle={(nextBookmarked) => {

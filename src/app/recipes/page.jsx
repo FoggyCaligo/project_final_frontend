@@ -84,6 +84,7 @@ export default function RecipesPage() {
                             handleClick={() =>
                                 router.push(`/recipes/${recipe.recipeId}`)
                             }
+                            
                             imageURL={recipe.thumbnailUrl}
                         />
                     ))}

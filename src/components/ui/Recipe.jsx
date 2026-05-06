@@ -16,6 +16,7 @@ export default function Recipe({
     recipeId,
     name,
     time,
+    quantity,
     difficulty,
     imageURL,
     handleClick,
@@ -38,20 +39,20 @@ export default function Recipe({
         try {
             if (!recipeId) return false;
 
-            let loginId = user?.loginId;
-            if (!loginId) {
+            let userId = user?.userId;
+            if (!userId) {
                 const me = await getMeApi();
-                loginId = me?.loginId;
+                userId = me?.userId;
             }
-            if (!loginId) return false;
+            if (!userId) return false;
 
             if (nextBookmarked === false) {
-                await removeBookmark(recipeId, loginId);
+                await removeBookmark(recipeId, userId);
                 onBookmarkToggle?.(false);
                 return false;
             }
 
-            await addBookmark(recipeId, loginId);
+            await addBookmark(recipeId, userId);
             onBookmarkToggle?.(true);
             return true;
         } catch (error) {
@@ -223,8 +224,8 @@ export default function Recipe({
                     </>
                 )}
                 <div className="flex flex-row items-center gap-2">                {variant === "recommend" && (
-                    <div className="text-[11px] text-gray-400">
-                        semantic {semanticScore ?? "-"} · tag {tagScore ?? "-"} · hybrid {hybridScore ?? "-"}
+                    <div>
+                        {/* semantic {semanticScore ?? "-"} · tag {tagScore ?? "-"} · hybrid {hybridScore ?? "-"} */}
                     </div>
                 )}
                     <Button
