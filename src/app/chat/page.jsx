@@ -68,6 +68,7 @@ export default function ChatPage() {
                         {recommendations.map(recipe => (
                             <Recipe
                                 key={recipe.recipeId}
+                                recipeId={recipe.recipeId}
                                 name={recipe.title}
                                 time={recipe.cookTimeText || "정보 없음"}
                                 difficulty={recipe.summary || "보통"}

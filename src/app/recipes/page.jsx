@@ -38,11 +38,12 @@ export default function RecipesPage() {
         const fetchRecipes = async () => {
             try {
                 const result = await getAllRecipes(page, 12, cookingType, sort);
-                setRecipes(result.content);
-                setTotalPages(result.pageInfo.totalPages);
-                console.log(result);
+                setRecipes(result?.content ?? []);
+                setTotalPages(result?.pageInfo?.totalPages ?? 0);
             } catch (e) {
                 console.error(e);
+                setRecipes([]);
+                setTotalPages(0);
             }
         };
 
@@ -76,6 +77,7 @@ export default function RecipesPage() {
                     {recipes.map(recipe => (
                         <Recipe
                             key={recipe.recipeId}
+                            recipeId={recipe.recipeId}
                             name={recipe.title}
                             time={recipe.cookTimeText}
                             difficulty={recipe.difficultyLevel || "보통"}
