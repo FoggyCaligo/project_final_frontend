@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { getAllRecipes } from "@/api/recipeApi";
+import { checkBookmarkStatus } from "@/api/bookmarkApi";
+import { getMeApi } from "@/api/authApi";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import Section from "@/components/ui/Section";
 import Recipe from "@/components/ui/Recipe";

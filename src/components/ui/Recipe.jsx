@@ -1,8 +1,9 @@
+import { useEffect, useState } from "react";
 import Button from "./Button";
 import BookMarkButton from "./BookMarkButton";
 import CustomTag from "./Tag";
 import { Tooltip } from "antd";
-import { addBookmark, removeBookmark } from "@/api/bookmarkApi";
+import { addBookmark, removeBookmark, checkBookmarkStatus } from "@/api/bookmarkApi";
 import { getMeApi, user } from "@/api/authApi";
 
 const conditionTagMap = {
@@ -16,6 +17,7 @@ export default function Recipe({
     recipeId,
     name,
     time,
+    quantity,
     difficulty,
     imageURL,
     handleClick,
@@ -30,28 +32,61 @@ export default function Recipe({
     missingIngredients = [],
     substituteSuggestions = [],
     warnings = [],
-    initialBookmarked = false,
     onBookmarkToggle
 }) {
+    const [isBookmarked, setIsBookmarked] = useState(false);
     const firstSubstitute = substituteSuggestions[0];
+
+    useEffect(() => {
+        const fetchBookmarkStatus = async () => {
+            try {
+                if (!recipeId) {
+                    setIsBookmarked(false);
+                    return;
+                }
+
+                let userId = user?.userId;
+                if (!userId) {
+                    const me = await getMeApi();
+                    userId = me?.userId;
+                }
+
+                if (!userId) {
+                    setIsBookmarked(false);
+                    return;
+                }
+
+                const status = await checkBookmarkStatus(recipeId, userId);
+                setIsBookmarked(Boolean(status?.isBookmarked));
+            } catch (error) {
+                console.error("북마크 상태 확인 실패:", error);
+                setIsBookmarked(false);
+            }
+        };
+
+        fetchBookmarkStatus();
+    }, [recipeId]);
+
     const handleBookmarkToggle = async (nextBookmarked) => {
         try {
             if (!recipeId) return false;
 
-            let loginId = user?.loginId;
-            if (!loginId) {
+            let userId = user?.userId;
+            if (!userId) {
                 const me = await getMeApi();
-                loginId = me?.loginId;
+                userId = me?.userId;
             }
-            if (!loginId) return false;
+            if (!userId) return false;
 
             if (nextBookmarked === false) {
-                await removeBookmark(recipeId, loginId);
+                await removeBookmark(recipeId, userId);
+                setIsBookmarked(false);
                 onBookmarkToggle?.(false);
                 return false;
             }
 
-            await addBookmark(recipeId, loginId);
+            await addBookmark(recipeId, userId);
+            setIsBookmarked(true);
             onBookmarkToggle?.(true);
             return true;
         } catch (error) {
@@ -223,8 +258,8 @@ export default function Recipe({
                     </>
                 )}
                 <div className="flex flex-row items-center gap-2">                {variant === "recommend" && (
-                    <div className="text-[11px] text-gray-400">
-                        semantic {semanticScore ?? "-"} · tag {tagScore ?? "-"} · hybrid {hybridScore ?? "-"}
+                    <div>
+                        {/* semantic {semanticScore ?? "-"} · tag {tagScore ?? "-"} · hybrid {hybridScore ?? "-"} */}
                     </div>
                 )}
                     <Button
@@ -235,7 +270,7 @@ export default function Recipe({
                         레시피 보기
                     </Button>
                     <BookMarkButton
-                        initialBookmarked={initialBookmarked}
+                        initialBookmarked={isBookmarked}
                         onToggle={handleBookmarkToggle}
                     />
                 </div>
