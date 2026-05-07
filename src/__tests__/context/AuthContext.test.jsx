@@ -2,6 +2,15 @@ import { render, screen, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+  usePathname: () => '/',
+}));
+
+jest.mock('@/api/authApi', () => ({
+  getMeApi: jest.fn().mockResolvedValue({ data: { data: null } }),
+}));
+
 // AuthContext를 소비하는 테스트용 컴포넌트
 function TestConsumer() {
   const { user, login, logout } = useAuth();
