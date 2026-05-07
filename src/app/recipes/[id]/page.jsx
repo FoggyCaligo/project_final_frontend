@@ -1,6 +1,7 @@
-
 import RecipeInfoTable from "@/components/recipe/RecipeInfoTable";
 import RecipeStep from "@/components/recipe/RecipeStep";
+import CookRecipeButton from "@/components/recipe/CookRecipeButton";
+import BookmarkButton from "@/components/recipe/BookmarkButton";
 import styles from "./Recipe.module.css";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import { getRecipeDetail } from "@/api/recipeApi";
@@ -69,8 +70,12 @@ export default async function RecipePage({ params }) {
   return (
     <PrivateLayout>
       <div className={styles.recipeContainer}>
-        <div className="flex justify-between items-end mb-6">
+        <div className="flex justify-between items-center mb-6">
           <h2 className={styles.recipeSubHeader}>{recipeData.title}</h2>
+          <div className="flex gap-3">
+            <BookmarkButton recipeId={recipeData.recipeId} />
+            <CookRecipeButton recipeId={recipeData.recipeId} />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">

@@ -15,5 +15,10 @@ export const getAllRecipes = async (
 
 export const getRecipeDetail = async (id) => {
     const response = await api.get(`/v1/recipes/${id}`);
-    return response.data?.data ?? response.data;
+    return response.data;
+};
+
+export const cookRecipe = async (id) => {
+    const response = await api.post(`/v1/recipes/${id}/cooked`);
+    return response.data;
 };
