@@ -16,6 +16,7 @@ import Title from "@/components/ui/Title.jsx";
 import SubTitle from "@/components/ui/SubTitle.jsx";
 import Select from "@/components/ui/Select.jsx";
 import IngredientComponent from "./components/Ingredient.jsx"
+import Loading from "@/components/ui/Loading.jsx";
 import { fileAssetPublicUrl } from "@/lib/fileAssetUrl";
 import { inferCategoryIdFromIngredientName } from "@/lib/ingredientCategoryHeuristic";
 
@@ -177,6 +178,7 @@ export default function FridgePage() {
     const [categories, setCategories] = useState([]);
     const [currentIngredient, setCurrentIngredient] = useState(new Ingredient());
     const [scanner, setScanner] = useState(new ImageScanner());
+    const [isRecognizing, setIsRecognizing] = useState(false);
     /** 이미지 인식 API 실패 시 사용자 안내 */
     const [visionRecognitionError, setVisionRecognitionError] = useState("");
 
@@ -412,7 +414,7 @@ export default function FridgePage() {
                         ))}
                     </div>
                 </Card>
-
+                <Loading isOpen={isRecognizing} text={"이미지 인식하는 중.."}></Loading>
                 <Modal
                     title={modalMode === ModalModes.add ? "재료 추가" : "재료 수정"}
                     isOpen={modalMode !== ModalModes.close}
@@ -525,6 +527,7 @@ export default function FridgePage() {
                                         }
                                         return prev.cloneWith({ file, previewUrl, results: [] });
                                     });
+                                    setIsRecognizing(true);
                                     try {
                                         const res = await fridgeApi.recognizeIngredientImage(file, 3);
                                         const payload = res.data?.data;
@@ -559,6 +562,8 @@ export default function FridgePage() {
                                         setCurrentIngredient((prev) =>
                                             prev.cloneWith({ visionFileId: null })
                                         );
+                                    } finally {
+                                        setIsRecognizing(false);
                                     }
                                     e.target.value = "";
                                 }}
