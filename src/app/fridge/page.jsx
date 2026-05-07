@@ -179,6 +179,8 @@ export default function FridgePage() {
     const [currentIngredient, setCurrentIngredient] = useState(new Ingredient());
     const [scanner, setScanner] = useState(new ImageScanner());
     const [isRecognizing, setIsRecognizing] = useState(false);
+    const [isMutating, setIsMutating] = useState(false);
+    const [mutatingText, setMutatingText] = useState("");
     /** 이미지 인식 API 실패 시 사용자 안내 */
     const [visionRecognitionError, setVisionRecognitionError] = useState("");
 
@@ -241,6 +243,11 @@ export default function FridgePage() {
     }
 
     const handleConfirm = async () => {
+        const isEditMode = modalMode === ModalModes.edit;
+        if (isEditMode) {
+            setMutatingText("식재료 수정하는 중...");
+            setIsMutating(true);
+        }
         try {
             const dto = toApiDto(currentIngredient, visionFileIdRef.current);
             if (modalMode === ModalModes.add) {
@@ -253,16 +260,26 @@ export default function FridgePage() {
             closeModal();
         } catch (err) {
             console.error("식재료 저장 실패:", err);
+        } finally {
+            if (isEditMode) {
+                setIsMutating(false);
+                setMutatingText("");
+            }
         }
     };
 
     const handleClickDelete = async (ingredient) => {
+        setMutatingText("식재료 삭제하는 중...");
+        setIsMutating(true);
         try {
             await fridgeApi.deleteIngredient(ingredient.id);
             await fetchIngredients();
             await fetchSummary();
         } catch (err) {
             console.error("식재료 삭제 실패:", err);
+        } finally {
+            setIsMutating(false);
+            setMutatingText("");
         }
     };
 
@@ -414,7 +431,10 @@ export default function FridgePage() {
                         ))}
                     </div>
                 </Card>
-                <Loading isOpen={isRecognizing} text={"이미지 인식하는 중.."}></Loading>
+                <Loading
+                    isOpen={isRecognizing || isMutating}
+                    text={isRecognizing ? "이미지 인식하는 중.." : mutatingText}
+                ></Loading>
                 <Modal
                     title={modalMode === ModalModes.add ? "재료 추가" : "재료 수정"}
                     isOpen={modalMode !== ModalModes.close}

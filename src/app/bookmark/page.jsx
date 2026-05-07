@@ -9,6 +9,26 @@ import Recipe from "@/components/ui/Recipe";
 import Section from "@/components/ui/Section";
 import Loading from "@/components/ui/Loading";
 
+const toArray = (value) => {
+    if (Array.isArray(value)) return value;
+    if (Array.isArray(value?.content)) return value.content;
+    if (Array.isArray(value?.items)) return value.items;
+    if (Array.isArray(value?.data)) return value.data;
+    return [];
+};
+
+const normalizeBookmarkRecipe = (item = {}) => {
+    const recipe = item?.recipe ?? item;
+
+    return {
+        recipeId: recipe?.recipeId ?? recipe?.id ?? item?.recipeId ?? item?.id,
+        title: recipe?.title ?? recipe?.name ?? recipe?.recipeName ?? item?.recipeName ?? "레시피",
+        cookTimeText: recipe?.cookTimeText ?? recipe?.cookTime ?? recipe?.time ?? "정보 없음",
+        difficultyLevel: recipe?.difficultyLevel ?? recipe?.difficulty ?? "정보 없음",
+        thumbnailUrl: recipe?.thumbnailUrl ?? recipe?.thumbnail_url ?? recipe?.imageURL ?? recipe?.imageUrl ?? item?.thumbnailUrl ?? null,
+    };
+};
+
 export default function BookMark() {
     const router = useRouter();
     const [bookmarkedRecipes, setBookmarkedRecipes] = useState([]);
@@ -22,13 +42,15 @@ export default function BookMark() {
 
                 if (!userId) {
                     setBookmarkedRecipes([]);
-                    console.log("no userId");
                     return;
                 }
 
                 const recipes = await getBookmarkedRecipes(userId);
-                console.log("recipes",recipes);
-                setBookmarkedRecipes(recipes || []);
+                const normalizedRecipes = toArray(recipes)
+                    .map(normalizeBookmarkRecipe)
+                    .filter((recipe) => Boolean(recipe.recipeId));
+
+                setBookmarkedRecipes(normalizedRecipes);
             } catch (err) {
                 console.error("API 에러:", err);
                 setBookmarkedRecipes([]);
@@ -66,9 +88,8 @@ export default function BookMark() {
                             key={recipe.recipeId}
                             recipeId={recipe.recipeId}
                             name={recipe.title}
-                            time={recipe.cookTimeText || "정보 없음"}
-                            difficulty={recipe.difficultyLevel || "정보 없음"}
-                            
+                            time={recipe.cookTimeText}
+                            difficulty={recipe.difficultyLevel}
                             imageURL={recipe.thumbnailUrl}
                             onBookmarkToggle={(nextBookmarked) => {
                                 if (!nextBookmarked) {
