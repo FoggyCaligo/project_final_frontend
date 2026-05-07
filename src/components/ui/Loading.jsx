@@ -1,9 +1,15 @@
 'use client';
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 export default function Loading({ isOpen = false, text = "불러오는 중..." }) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     useEffect(() => {
         if (!isOpen) return;
 
@@ -14,7 +20,7 @@ export default function Loading({ isOpen = false, text = "불러오는 중..." }
         };
     }, [isOpen]);
 
-    if (!isOpen) return null;
+    if (!isOpen || !mounted) return null;
 
     const base = {
         overlay: "fixed inset-0 z-50 flex items-center justify-center px-4 py-6",

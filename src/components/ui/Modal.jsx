@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Button from "./Button";
 
@@ -16,6 +16,12 @@ export default function Modal({
     showFooter = true,
     closeOnOverlay = true,
 }) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     useEffect(() => {
         if (!isOpen) return;
 
@@ -34,7 +40,7 @@ export default function Modal({
         };
     }, [isOpen, onClose]);
 
-    if (!isOpen) return null;
+    if (!isOpen || !mounted) return null;
 
     const base = {
         overlay: "fixed inset-0 z-50 flex items-center justify-center px-4 py-6",
