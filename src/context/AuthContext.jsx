@@ -33,9 +33,15 @@ export function AuthProvider({ children }) {
     let userId = null;
     try {
       const meRes = await getMeApi();
-      const meData = meRes.data?.data;
-      finalNickname = meData?.nickname ?? finalNickname;
-      userId = meData?.userId ?? meData?.id ?? null;
+      // getMeApi는 언랩된 payload를 반환하지만, 테스트/일부 호출부 호환을 위해 중첩 포맷도 함께 처리합니다.
+      const meData = meRes?.data?.data ?? meRes?.data ?? meRes ?? null;
+      finalNickname = meData?.nickname ?? meData?.name ?? finalNickname;
+      userId =
+        meData?.userId ??
+        meData?.id ??
+        meData?.memberId ??
+        meData?.user?.userId ??
+        null;
     } catch (error) {
       console.warn("닉네임 정보를 가져오는 데 실패했습니다. loginId를 닉네임으로 사용합니다.", error);
     }
