@@ -70,6 +70,12 @@ export default function MyPageHome() {
           </div>
         )}
 
+        {myPage.activityUnavailable && (
+          <div className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)] p-4 text-sm font-semibold text-[var(--color-text-sub)]">
+            프로필 정보는 확인했지만 작성 후기와 북마크 활동은 아직 연결되지 않았습니다.
+          </div>
+        )}
+
         <ProfileCard profile={myPage.profile} loading={loading} onRefresh={refresh} />
       </section>
 

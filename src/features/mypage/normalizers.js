@@ -34,7 +34,7 @@ export function normalizeProfile(payload) {
     nickname: firstDefined(profile.nickname, profile.name, profile.loginId, "회원"),
     profileImageUrl: firstDefined(profile.profileImageUrl, profile.profileImage, profile.imageUrl, ""),
     status: firstDefined(profile.status, ""),
-    emailVerified: Boolean(firstDefined(profile.emailVerified, false)),
+    emailVerified: firstDefined(profile.emailVerified, null),
     lastLoginAt: firstDefined(profile.lastLoginAt, null),
     createdAt: firstDefined(profile.createdAt, null),
   };
