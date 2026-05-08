@@ -1,7 +1,7 @@
 import { fridgeApi } from "@/api/fridgeApi";
 import { getBookmarkedRecipes } from "@/api/bookmarkApi";
 import { getUserPosts } from "@/api/postApi";
-import { getMeApi } from "@/api/authApi";
+import api from "@/config/axios";
 import { initialMyPageData } from "./constants";
 import {
   getCountFromList,
@@ -19,8 +19,22 @@ function addRejectedSource(errors, result, label) {
   }
 }
 
+function getUserScopedRequests(profile) {
+  if (!profile.userId) {
+    return {
+      requests: [Promise.resolve([]), Promise.resolve([])],
+      activityUnavailable: true,
+    };
+  }
+
+  return {
+    requests: [getUserPosts(profile.userId), getBookmarkedRecipes(profile.userId)],
+    activityUnavailable: false,
+  };
+}
+
 async function requestCurrentProfile() {
-  const response = await getMeApi();
+  const response = await api.get("/v1/users/me/profile");
   return normalizeProfile(unwrapApiData(response, null));
 }
 
@@ -37,9 +51,7 @@ export async function requestMyPageData() {
     };
   }
 
-  const userScopedRequests = profile.userId
-    ? [getUserPosts(profile.userId), getBookmarkedRecipes(profile.userId)]
-    : [Promise.resolve([]), Promise.resolve([])];
+  const { requests: userScopedRequests, activityUnavailable } = getUserScopedRequests(profile);
 
   const [summaryResult, postsResult, bookmarksResult] = await Promise.allSettled([
     fridgeApi.getSummary(),
@@ -50,10 +62,6 @@ export async function requestMyPageData() {
   addRejectedSource(errors, summaryResult, "냉장고 요약");
   addRejectedSource(errors, postsResult, "작성 후기");
   addRejectedSource(errors, bookmarksResult, "북마크 레시피");
-
-  if (!profile.userId) {
-    errors.push("사용자 ID 기반 활동");
-  }
 
   const fridgeSummary =
     summaryResult.status === "fulfilled"
@@ -86,6 +94,7 @@ export async function requestMyPageData() {
     recentPosts,
     bookmarkedRecipes,
     errors,
+    activityUnavailable,
     authRequired: false,
   };
 }

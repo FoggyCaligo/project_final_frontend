@@ -1,12 +1,18 @@
 import { accountSettingItems } from "@/features/mypage/constants";
 
+const toneClassMap = {
+  success: "badge-success",
+  warning: "badge-warning",
+  danger: "badge-danger",
+};
+
 export default function AccountSettings() {
   return (
     <article className="card-box">
       <div className="card-body">
         <h2 className="card-title">계정 설정</h2>
         <p className="card-desc">
-          인증 API와 프로필 수정 API가 합쳐지면 바로 연결할 수 있도록 메뉴를 분리했습니다.
+          로그인한 회원의 프로필과 계정 관련 상태를 확인합니다.
         </p>
 
         <div className="mt-5 flex flex-col gap-3">
@@ -19,7 +25,7 @@ export default function AccountSettings() {
                 <strong className="text-[var(--color-text)]">{item.label}</strong>
                 <p className="card-desc mt-1 text-sm">{item.desc}</p>
               </div>
-              <span className="badge">{item.status}</span>
+              <span className={`badge ${toneClassMap[item.tone] ?? ""}`}>{item.status}</span>
             </div>
           ))}
         </div>
