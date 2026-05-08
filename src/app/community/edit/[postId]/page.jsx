@@ -237,11 +237,11 @@ export default function CommunityEditPage() {
                                 value={recipe}
                                 onChange={(e) => setRecipe(e.target.value)}
                             >
-                                {/* 등록 페이지와 동일하게 조건부 렌더링 적용 */}
+                                {/* 💡 수정된 부분: item.recipeName -> item.title */}
                                 {bookmarkedRecipes.length > 0 ? (
                                     bookmarkedRecipes.map((item) => (
                                         <option key={item.recipeId} value={item.recipeId}>
-                                            {item.recipeName}
+                                            {item.title}
                                         </option>
                                     ))
                                 ) : (
