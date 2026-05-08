@@ -74,7 +74,7 @@ export default function CommunityEditPage() {
                 if (postData.images && postData.images.length > 0) {
                     const loadedImages = postData.images.map((img, idx) => ({
                         id: `existing-${idx}`,
-                        preview: `http://43.201.1.45/uploads/community/${img.storedName}`,
+                        preview: `https://www.todayfridge.today/uploads/community/${img.storedName}`,
                         isExisting: true,
                         storedName: img.storedName
                     }));
