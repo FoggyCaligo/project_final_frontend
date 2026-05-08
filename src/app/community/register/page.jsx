@@ -72,7 +72,7 @@ export default function CommunityRegisterPage() {
     
     const getImageUrl = (storagePath, storedName) => {
         if (!storedName) return placeholderSvg;
-        return `http://43.201.1.45/uploads/community/${storedName}`;
+        return `https://www.todayfridge.today/uploads/community/${storedName}`;
     };
 
     const processFiles = (files) => {

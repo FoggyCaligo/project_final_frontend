@@ -2,7 +2,7 @@ import axios from "axios";
 
 const uploadApi = axios.create({
   // 환경 변수가 없으면 기본값(하드코딩 IP) 사용
-  baseURL: process.env.NEXT_PUBLIC_APACHE_UPLOAD_URL ?? "http://43.201.1.45/preload_test.php",
+  baseURL: process.env.NEXT_PUBLIC_APACHE_UPLOAD_URL ?? "https://www.todayfridge.today/preload_test.php",
 });
 
 uploadApi.interceptors.response.use(

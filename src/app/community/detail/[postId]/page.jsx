@@ -192,7 +192,7 @@ export default function CommunityDetailPage() {
                 <div className="image-box image-rounded thumb-16-10 mb-5 relative group">
                     <img 
                         className="image-cover w-full h-full object-cover transition-all duration-300" 
-                        src={images[currentImageIndex] ? `http://43.201.1.45/uploads/community/${images[currentImageIndex].storedName}` : "/placeholder.svg"} 
+                        src={images[currentImageIndex] ? `https://www.todayfridge.today/uploads/community/${images[currentImageIndex].storedName}` : "/placeholder.svg"} 
                         alt={`상세 이미지 ${currentImageIndex + 1}`} 
                     />
                     {hasMultipleImages && (
