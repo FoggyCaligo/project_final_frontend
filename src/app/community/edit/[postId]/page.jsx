@@ -23,11 +23,35 @@ export default function CommunityEditPage() {
     const [bookmarkedRecipes, setBookmarkedRecipes] = useState([]); 
     const [isLoading, setIsLoading] = useState(false);
     
-    // 💡 테스트용 임시 유저 ID (등록 페이지와 동일하게 1로 설정)
-    const currentUserId = 1; 
+    // 💡 동적으로 변경될 로그인 유저 ID 상태 관리
+    const [currentUserId, setCurrentUserId] = useState(null);
     
-    // 화면 로드 시 기존 게시글 정보와 북마크 목록을 가져옴
+    // 1. 컴포넌트 마운트 시 세션스토리지에서 유저 정보 가져오기
     useEffect(() => {
+        const authUserStr = sessionStorage.getItem('authUser');
+        if (authUserStr) {
+            try {
+                const authUser = JSON.parse(authUserStr);
+                
+                // 체크용 콘솔 출력
+                console.log("수정페이지기준 세션에서 로드된 유저 정보 (loginId):", authUser.loginId);
+                console.log("수정페이지기준 세션에서 로드된 유저 정보 (userId):", authUser.userId);
+                
+                setCurrentUserId(authUser.userId);
+            } catch (error) {
+                console.error("세션 데이터 파싱 오류:", error);
+            }
+        } else {
+            alert("로그인이 필요한 서비스입니다.");
+            router.push('/login'); 
+        }
+    }, [router]);
+    
+    // 2. 화면 로드 시 기존 게시글 정보와 북마크 목록을 가져옴
+    useEffect(() => {
+        // userId가 아직 없으면 (null 상태) API 호출 대기
+        if (!currentUserId) return;
+
         const fetchInitialData = async () => {
             try {
                 // 1. 북마크 목록 로드
@@ -39,7 +63,7 @@ export default function CommunityEditPage() {
                 setTitle(postData.title);
                 setContent(postData.content);
                 
-                // 💡 기존 게시글의 레시피 세팅 (만약 없다면 북마크 목록의 첫 번째 레시피를 기본값으로 세팅)
+                // 기존 게시글의 레시피 세팅 (만약 없다면 북마크 목록의 첫 번째 레시피를 기본값으로 세팅)
                 if (postData.recipeId) {
                     setRecipe(postData.recipeId.toString());
                 } else if (bookmarkData && bookmarkData.length > 0) {
@@ -71,7 +95,7 @@ export default function CommunityEditPage() {
                 if (!img.isExisting) URL.revokeObjectURL(img.preview);
             });
         };
-    }, [postId]);
+    }, [postId, currentUserId]); // currentUserId가 세팅될 때 동작하도록 의존성 추가
 
     const processFiles = (files) => {
         const validExtensions = ['image/jpeg', 'image/png', 'image/webp'];
@@ -90,7 +114,13 @@ export default function CommunityEditPage() {
     const handleUpdate = async () => {
         if (isLoading) return;
 
-        // 💡 유효성 검사 추가 (이미지와 레시피 필수 선택)
+        // 💡 로그인 상태 유효성 검사
+        if (!currentUserId) {
+            alert("로그인 정보를 확인할 수 없습니다. 다시 로그인 해주세요.");
+            return;
+        }
+
+        // 유효성 검사 추가 (이미지와 레시피 필수 선택)
         if (images.length === 0) {
             alert("이미지를 하나 이상 등록해주세요.");
             return;
@@ -207,7 +237,7 @@ export default function CommunityEditPage() {
                                 value={recipe}
                                 onChange={(e) => setRecipe(e.target.value)}
                             >
-                                {/* 💡 등록 페이지와 동일하게 조건부 렌더링 적용 */}
+                                {/* 등록 페이지와 동일하게 조건부 렌더링 적용 */}
                                 {bookmarkedRecipes.length > 0 ? (
                                     bookmarkedRecipes.map((item) => (
                                         <option key={item.recipeId} value={item.recipeId}>

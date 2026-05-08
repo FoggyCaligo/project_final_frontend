@@ -21,15 +21,41 @@ export default function CommunityDetailPage() {
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowLoading, setIsFollowLoading] = useState(false);
 
-    // 테스트용 현재 유저 ID
-    const currentUserId = 2;
+    // 💡 로그인 유저 ID 상태 관리
+    const [currentUserId, setCurrentUserId] = useState(null);
 
+    // 1. 컴포넌트 마운트 시 세션스토리지에서 유저 정보 가져오기
     useEffect(() => {
+        const authUserStr = sessionStorage.getItem('authUser');
+        if (authUserStr) {
+            try {
+                const authUser = JSON.parse(authUserStr);
+                
+                // 체크용 콘솔 출력
+                console.log("상세보기기준 세션에서 로드된 유저 정보 (loginId):", authUser.loginId);
+                console.log("상세보기기준 세션에서 로드된 유저 정보 (userId):", authUser.userId);
+                
+                setCurrentUserId(authUser.userId);
+            } catch (error) {
+                console.error("세션 데이터 파싱 오류:", error);
+            }
+        } else {
+            alert("로그인이 필요한 서비스입니다.");
+            router.push('/login'); 
+        }
+    }, [router]);
+
+    // 2. 유저 ID가 확인된 후 게시글 상세 정보 및 상태 로드하기
+    useEffect(() => {
+        // userId가 아직 없으면 (null 상태) API 호출 대기
+        if (!currentUserId) return;
+
         const fetchDetail = async () => {
             try {
                 const data = await getPostDetail(postId);
                 setPost(data);
                 
+                // 타인의 글일 경우 북마크, 신고, 팔로우 상태 조회
                 if (data.authorUserId !== currentUserId) {
                     if (data.recipeId) {
                         const bookmarkData = await checkBookmarkStatus(currentUserId, data.recipeId);
@@ -42,6 +68,7 @@ export default function CommunityDetailPage() {
                     setIsFollowing(followData.isFollowing);
                 }
 
+                // 좋아요 상태 조회
                 const likeData = await getPostLikeStatus(postId, currentUserId);
                 setIsLiked(likeData.isLiked);
                 const fetchedCount = likeData.likeCount ?? likeData.like_count ?? 0;
@@ -52,7 +79,7 @@ export default function CommunityDetailPage() {
             }
         };
         fetchDetail();
-    }, [postId]);
+    }, [postId, currentUserId]); // postId나 currentUserId가 변경될 때 실행
 
     const handleDelete = async () => {
         if (confirm("정말로 이 게시글을 삭제하시겠습니까?")) {
@@ -251,7 +278,6 @@ export default function CommunityDetailPage() {
                             </>
                         )}
                         
-                        {/* 💡 새로운 안정적인 책(Book) 아이콘으로 교체 + 인라인 스타일로 크기 강제 고정 */}
                         {post.recipeId && (
                             <button className="btn btn-secondary flex items-center gap-1.5 whitespace-nowrap" onClick={() => router.push(`/recipes/${post.recipeId}`)}>
                                 <span className="inline-flex items-center justify-center shrink-0" style={{ minWidth: '16px', minHeight: '16px', width: '16px', height: '16px' }}>

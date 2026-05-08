@@ -21,18 +21,44 @@ export default function CommunityRegisterPage() {
     const [recentPosts, setRecentPosts] = useState([]); 
     const [isLoading, setIsLoading] = useState(false);   
 
-    // 💡 테스트용 로그인 유저 ID 1로 복구
-    const currentUserId = 1;
+    // 💡 로그인 유저 ID 상태 관리
+    const [currentUserId, setCurrentUserId] = useState(null);
     const router = useRouter();
-    
+
+    // 1. 컴포넌트 마운트 시 세션스토리지에서 유저 정보 가져오기
     useEffect(() => {
+        const authUserStr = sessionStorage.getItem('authUser');
+        if (authUserStr) {
+            try {
+                const authUser = JSON.parse(authUserStr);
+                
+                // 💡 체크용: loginId를 가져와서 콘솔에 출력
+                console.log("등록페이지기준 세션에서 로드된 유저 정보 (loginId):", authUser.loginId);
+                console.log("등록페이지기준 세션에서 로드된 유저 정보 (userId):", authUser.userId);
+                
+                // 담당자가 API를 수정하면 정상적인 userId가 들어오게 됩니다.
+                setCurrentUserId(authUser.userId);
+            } catch (error) {
+                console.error("세션 데이터 파싱 오류:", error);
+            }
+        } else {
+            alert("로그인이 필요한 서비스입니다.");
+            router.push('/login'); 
+        }
+    }, [router]);
+    
+    // 2. 유저 ID가 확인된 후 초기 데이터 로드하기
+    useEffect(() => {
+        // userId가 아직 없으면 (null 상태) API 호출 대기
+        if (!currentUserId) return;
+
         const fetchInitialData = async () => {
             try {
                 // 1. 북마크 데이터 로드
                 const bookmarkData = await getBookmarkedRecipes(currentUserId);
                 setBookmarkedRecipes(bookmarkData);
                 
-                // 💡 첫 번째 항목 자동 선택 적용 (선택하지 않음 옵션 제거에 따른 조치)
+                // 첫 번째 항목 자동 선택 적용
                 if (bookmarkData && bookmarkData.length > 0) {
                     setRecipe(bookmarkData[0].recipeId.toString());
                 }
@@ -46,11 +72,14 @@ export default function CommunityRegisterPage() {
         };
     
         fetchInitialData();
-    
+    }, [currentUserId]);
+
+    // 3. 메모리 누수 방지 (ObjectURL 해제)
+    useEffect(() => {
         return () => {
             images.forEach(img => URL.revokeObjectURL(img.preview));
         };
-    }, []);
+    }, [images]);
     
     const getImageUrl = (storagePath, storedName) => {
         if (!storedName) return placeholderSvg;
@@ -75,6 +104,11 @@ export default function CommunityRegisterPage() {
 
     const handleSubmit = async () => {
         if (isLoading) return;
+
+        if (!currentUserId) {
+            alert("로그인 정보를 확인할 수 없습니다. 다시 로그인 해주세요.");
+            return;
+        }
 
         if (images.length === 0) {
             alert("이미지를 하나 이상 등록해주세요.");
@@ -195,7 +229,6 @@ export default function CommunityRegisterPage() {
                                 value={recipe}
                                 onChange={(e) => setRecipe(e.target.value)}
                             >
-                                {/* 💡 '선택하지 않음' 옵션 제거 완료 */}
                                 {bookmarkedRecipes.length > 0 ? (
                                     bookmarkedRecipes.map((item) => (
                                         <option key={item.recipeId} value={item.recipeId}>
