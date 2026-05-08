@@ -159,11 +159,13 @@ export default function Recipe({
                             <Tooltip
                                 placement="top"
                                 color="#ffffff"
-                                overlayInnerStyle={{
-                                    color: "#374151",
-                                    borderRadius: "12px",
-                                    padding: "10px 12px",
-                                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                                styles={{
+                                    body: {
+                                        color: "#374151",
+                                        borderRadius: "12px",
+                                        padding: "10px 12px",
+                                        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                                    },
                                 }}
                                 title={
                                     missingIngredients.length ? (
