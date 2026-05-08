@@ -21,25 +21,18 @@ export default function CommunityRegisterPage() {
     const [recentPosts, setRecentPosts] = useState([]); 
     const [isLoading, setIsLoading] = useState(false);   
 
-    // 💡 로그인 유저 ID 상태 관리
     const [currentUserId, setCurrentUserId] = useState(null);
     const router = useRouter();
 
-    // 1. 컴포넌트 마운트 시 세션스토리지에서 유저 정보 가져오기
+    // 1. 세션 정보 로드
     useEffect(() => {
         const authUserStr = sessionStorage.getItem('authUser');
         if (authUserStr) {
             try {
                 const authUser = JSON.parse(authUserStr);
-                
-                // 💡 체크용: loginId를 가져와서 콘솔에 출력
-                console.log("등록페이지기준 세션에서 로드된 유저 정보 (loginId):", authUser.loginId);
-                console.log("등록페이지기준 세션에서 로드된 유저 정보 (userId):", authUser.userId);
-                
-                // 담당자가 API를 수정하면 정상적인 userId가 들어오게 됩니다.
                 setCurrentUserId(authUser.userId);
             } catch (error) {
-                console.error("세션 데이터 파싱 오류:", error);
+                console.error("세션 파싱 오류:", error);
             }
         } else {
             alert("로그인이 필요한 서비스입니다.");
@@ -47,34 +40,30 @@ export default function CommunityRegisterPage() {
         }
     }, [router]);
     
-    // 2. 유저 ID가 확인된 후 초기 데이터 로드하기
+    // 2. 초기 데이터 로드 (북마크, 최근 후기)
     useEffect(() => {
-        // userId가 아직 없으면 (null 상태) API 호출 대기
         if (!currentUserId) return;
 
         const fetchInitialData = async () => {
             try {
-                // 1. 북마크 데이터 로드
                 const bookmarkData = await getBookmarkedRecipes(currentUserId);
                 setBookmarkedRecipes(bookmarkData);
                 
-                // 첫 번째 항목 자동 선택 적용
+                // 첫 번째 항목 자동 선택 (recipeId, title 적용)
                 if (bookmarkData && bookmarkData.length > 0) {
                     setRecipe(bookmarkData[0].recipeId.toString());
                 }
     
-                // 2. 최근 작성 게시글 데이터 로드
                 const postData = await getUserPosts(currentUserId);
                 setRecentPosts(postData || []); 
             } catch (error) {
-                console.error("초기 데이터를 불러오지 못했습니다.", error);
+                console.error("초기 데이터 로드 실패:", error);
             }
         };
     
         fetchInitialData();
     }, [currentUserId]);
 
-    // 3. 메모리 누수 방지 (ObjectURL 해제)
     useEffect(() => {
         return () => {
             images.forEach(img => URL.revokeObjectURL(img.preview));
@@ -96,47 +85,35 @@ export default function CommunityRegisterPage() {
                 preview: URL.createObjectURL(file),
             }));
 
-        setImages(prev => {
-            const combined = [...prev, ...newImages];
-            return combined.slice(0, 5);
-        });
+        setImages(prev => [...prev, ...newImages].slice(0, 5));
     };
 
     const handleSubmit = async () => {
         if (isLoading) return;
-
         if (!currentUserId) {
-            alert("로그인 정보를 확인할 수 없습니다. 다시 로그인 해주세요.");
+            alert("로그인 정보를 확인할 수 없습니다.");
             return;
         }
-
         if (images.length === 0) {
-            alert("이미지를 하나 이상 등록해주세요.");
+            alert("이미지를 등록해주세요.");
             return;
         }
-
         if (!recipe) {
-            alert("북마크한 레시피를 선택해주세요.");
+            alert("레시피를 선택해주세요.");
             return;
         }
 
         setIsLoading(true);
-
         try {
             const formData = new FormData();
             formData.append('title', title);
             formData.append('content', content);
             formData.append('recipe', recipe);
-
-            images.forEach((img) => {
-                formData.append('images[]', img.file);
-            });
+            images.forEach((img) => formData.append('images[]', img.file));
 
             const uploadResult = await uploadImages(formData);
 
             if (uploadResult.success) {
-                console.log(`[Upload Success] ${uploadResult.uploaded_count}개의 이미지 업로드 완료`);
-
                 const finalPostData = {
                     userId: currentUserId,
                     title: title,
@@ -144,47 +121,26 @@ export default function CommunityRegisterPage() {
                     recipe: recipe,
                     image_files: uploadResult.data
                 };
-
                 const dbResult = await createPost(finalPostData);
-
                 if (dbResult.success) {
-                    console.log("[Submit Success] 게시글 등록이 완벽하게 처리되었습니다!");
-                    alert("게시글이 성공적으로 등록되었습니다.");
+                    alert("게시글이 등록되었습니다.");
                     router.push('/community');
                 }
-            } else {
-                console.error("[Upload Error] 서버 반환 에러:", uploadResult.error);
-                alert("업로드에 실패했습니다: " + (uploadResult.error || "알 수 없는 에러"));
             }
         } catch (error) {
-            console.error("[Submit Exception] API 흐름 에러:", error);
-            const errorMessage = error.message || "네트워크 오류가 발생했습니다.";
-            alert(`오류가 발생했습니다: ${errorMessage}`);
+            console.error("등록 에러:", error);
+            alert(`오류: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleDragOver = useCallback((e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragActive(true);
-    }, []);
-
-    const handleDragLeave = useCallback((e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragActive(false);
-    }, []);
-
+    const handleDragOver = useCallback((e) => { e.preventDefault(); setIsDragActive(true); }, []);
+    const handleDragLeave = useCallback((e) => { e.preventDefault(); setIsDragActive(false); }, []);
     const handleDrop = useCallback((e) => {
         e.preventDefault();
-        e.stopPropagation();
         setIsDragActive(false);
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            processFiles(e.dataTransfer.files);
-            e.dataTransfer.clearData();
-        }
+        if (e.dataTransfer.files?.length > 0) processFiles(e.dataTransfer.files);
     }, []);
 
     const handleFileChange = (e) => {
@@ -196,11 +152,9 @@ export default function CommunityRegisterPage() {
 
     const removeImage = (idToRemove) => {
         setImages(prev => {
-            const imageToRemove = prev.find(img => img.id === idToRemove);
-            if (imageToRemove) {
-                URL.revokeObjectURL(imageToRemove.preview);
-            }
-            return prev.filter(img => img.id !== idToRemove);
+            const img = prev.find(i => i.id === idToRemove);
+            if (img) URL.revokeObjectURL(img.preview);
+            return prev.filter(i => i.id !== idToRemove);
         });
     };
 
@@ -209,7 +163,7 @@ export default function CommunityRegisterPage() {
         setImages([]);
     };
 
-    const placeholderSvg = "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%271280%27%20height%3D%27800%27%20viewBox%3D%270%200%201280%20800%27%3E%0A%20%20%20%20%3Crect%20width%3D%27100%25%27%20height%3D%27100%25%27%20fill%3D%27%23ECE7DD%27/%3E%0A%20%20%20%20%3Crect%20x%3D%2760%27%20y%3D%2760%27%20width%3D%271160%27%20height%3D%27680%27%20rx%3D%2732%27%20fill%3D%27white%27%20stroke%3D%27%23E7E2D9%27%20stroke-width%3D%274%27/%3E%0A%20%20%20%20%3Ctext%20x%3D%27640%27%20y%3D%27360%27%20text-anchor%3D%27middle%27%20font-family%3D%27Pretendard%2CNoto%20Sans%20KR%2Csans-serif%27%20font-size%3D%2764%27%20font-weight%3D%27700%27%20fill%3D%27%235FAE7B%27%3E%EC%9A%94%EB%A6%AC%20%ED%9B%84%EA%B8%B0%20%EC%9D%B4%EB%AF%B8%EC%A7%80%3C/text%3E%0A%20%20%20%20%3Ctext%20x%3D%27640%27%20y%3D%27430%27%20text-anchor%3D%27middle%27%20font-family%3D%27Pretendard%2CNoto%20Sans%20KR%2Csans-serif%27%20font-size%3D%2728%27%20fill%3D%27%237A847D%27%3E%EC%A7%81%EC%A0%91%20%EB%A7%8C%EB%93%A0%20%EA%B8%B0%EB%A1%9D%3C/text%3E%0A%20%20%20%20%3C/svg%3E";
+    const placeholderSvg = "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%271280%27%20height%3D%27800%27%20viewBox%3D%270%200%201280%20800%27%3E%3Crect%20width%3D%27100%25%27%20height%3D%27100%25%27%20fill%3D%27%23ECE7DD%27/%3E%3C/svg%3E";
 
     return (
         <main className="w-full">
@@ -232,26 +186,18 @@ export default function CommunityRegisterPage() {
                                 {bookmarkedRecipes.length > 0 ? (
                                     bookmarkedRecipes.map((item) => (
                                         <option key={item.recipeId} value={item.recipeId}>
-                                            {item.recipeName}
+                                            {item.title} {/* 수정된 부분: recipeName -> title */}
                                         </option>
                                     ))
                                 ) : (
-                                    <option value="" disabled>
-                                        북마크한 레시피가 없습니다
-                                    </option>
+                                    <option value="" disabled>북마크한 레시피가 없습니다</option>
                                 )}
                             </select>
                         </div>
 
                         <div className="flex flex-col gap-2 mb-4">
                             <label className="text-sm font-bold">제목</label>
-                            <InputText
-                                variant="secondary"
-                                is_full="true"
-                                placeholder="후기 제목을 입력하세요"
-                                getText={setTitle}
-                                setText={title}
-                            />
+                            <InputText variant="secondary" is_full="true" placeholder="후기 제목을 입력하세요" getText={setTitle} setText={title} />
                         </div>
 
                         <div className="flex flex-col gap-2 mb-4">
@@ -261,8 +207,7 @@ export default function CommunityRegisterPage() {
                                 placeholder="직접 만들어본 후기를 남겨보세요"
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
-                            >
-                            </textarea>
+                            />
                         </div>
 
                         <div className="flex flex-col gap-2 mb-4">
@@ -271,33 +216,20 @@ export default function CommunityRegisterPage() {
                                 <span className="text-gray-400 font-normal text-xs">jpg, png, webp</span>
                             </div>
                             <div
-                                className={`w-full flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors duration-200 ease-in-out ${isDragActive ? 'border-[var(--primary)] bg-[var(--color-primary-light)]' : 'border-[var(--border)] hover:bg-gray-50'
-                                    }`}
+                                className={`w-full flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors duration-200 ease-in-out ${isDragActive ? 'border-[var(--primary)] bg-[var(--color-primary-light)]' : 'border-[var(--border)] hover:bg-gray-50'}`}
                                 style={{ minHeight: '120px' }}
-                                onDragOver={handleDragOver}
-                                onDragLeave={handleDragLeave}
-                                onDrop={handleDrop}
+                                onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
                                 onClick={() => fileInputRef.current?.click()}
                             >
                                 <span className="text-[var(--text-sub)] mb-2 font-medium">여기로 이미지를 드래그하거나 클릭하세요</span>
                                 <span className="text-[var(--text-sub)] opacity-70 text-sm">한 번에 여러 장 선택 가능합니다</span>
-                                <input
-                                    ref={fileInputRef}
-                                    className="hidden"
-                                    type="file"
-                                    accept="image/jpeg, image/png, image/webp"
-                                    multiple
-                                    onChange={handleFileChange}
-                                />
+                                <input ref={fileInputRef} className="hidden" type="file" accept="image/jpeg, image/png, image/webp" multiple onChange={handleFileChange} />
                             </div>
                         </div>
 
+                        {/* 복구: 버튼 그룹 (로딩 상태 및 전체 이미지 제거) */}
                         <div className="flex flex-wrap gap-2 mt-5">
-                            <Button 
-                                variant="primary" 
-                                handleClick={handleSubmit}
-                                disabled={isLoading}
-                            >
+                            <Button variant="primary" handleClick={handleSubmit} disabled={isLoading}>
                                 {isLoading ? (
                                     <div className="flex items-center justify-center gap-2">
                                         <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -338,11 +270,7 @@ export default function CommunityRegisterPage() {
                             </div>
                         ) : (
                             <div className="overflow-hidden rounded-xl border border-[var(--border)] mb-4 opacity-70 aspect-[16/10]">
-                                <img
-                                    className="w-full h-full object-cover"
-                                    src={placeholderSvg}
-                                    alt="후기 이미지 예시"
-                                />
+                                <img className="w-full h-full object-cover" src={placeholderSvg} alt="후기 이미지 예시" />
                             </div>
                         )}
 
@@ -357,7 +285,7 @@ export default function CommunityRegisterPage() {
                     </Card>
                 </div>
 
-                {/* 2. 최근 후기 목록 섹션 */}
+                {/* 복구: 최근 후기 목록 섹션 */}
                 <div className="flex items-end justify-between gap-4 mb-5 px-2">
                     <div>
                         <h2 className="text-2xl font-bold m-0">최근 후기</h2>
@@ -372,13 +300,13 @@ export default function CommunityRegisterPage() {
                                 key={index}
                                 postId={post.postId}
                                 title={post.title}
-                                author={post.author}
-                                date={new Date(post.date).toLocaleString('ko-KR', {
+                                author={post.authorLoginId || post.author} // API 응답 필드 유연성 확보
+                                date={new Date(post.createdAt || post.date).toLocaleString('ko-KR', {
                                     year: 'numeric', month: '2-digit', day: '2-digit',
                                     hour: '2-digit', minute: '2-digit'
                                 })}
-                                desc={post.desc}
-                                imageSrc={getImageUrl(post.storagePath, post.storedName)}
+                                desc={post.content || post.desc}
+                                imageSrc={getImageUrl(post.storagePath, post.storedName || (post.images && post.images[0]?.storedName))}
                             />
                         ))
                     ) : (
