@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { getPostDetail, deletePost, addPostLike, removePostLike, getPostLikeStatus, addPostReport, getPostReportStatus, addFollow, removeFollow, checkFollowStatus } from '@/api/postApi';
 import { addBookmark, removeBookmark, checkBookmarkStatus } from '@/api/bookmarkApi';
+import { fileAssetPublicUrl } from '@/lib/fileAssetUrl';
 
 export default function CommunityDetailPage() {
     const { postId } = useParams();
@@ -192,7 +193,7 @@ export default function CommunityDetailPage() {
                 <div className="image-box image-rounded thumb-16-10 mb-5 relative group">
                     <img 
                         className="image-cover w-full h-full object-cover transition-all duration-300" 
-                        src={images[currentImageIndex] ? `https://www.todayfridge.today/uploads/community/${images[currentImageIndex].storedName}` : "/placeholder.svg"} 
+                        src={images[currentImageIndex] ? fileAssetPublicUrl(images[currentImageIndex].storagePath, images[currentImageIndex].storedName) : "/placeholder.svg"} 
                         alt={`상세 이미지 ${currentImageIndex + 1}`} 
                     />
                     {hasMultipleImages && (
