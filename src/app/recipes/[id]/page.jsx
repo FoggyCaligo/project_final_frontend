@@ -1,4 +1,5 @@
 import RecipeInfoTable from "@/components/recipe/RecipeInfoTable";
+import RecipeIngredients from "@/components/recipe/RecipeIngredients";
 import RecipeStep from "@/components/recipe/RecipeStep";
 import CookRecipeButton from "@/components/recipe/CookRecipeButton";
 import BookmarkButton from "@/components/recipe/BookmarkButton";
@@ -12,8 +13,7 @@ export default async function RecipePage({ params }) {
 
   try {
     const id = (await params).id || params.id;
-    const response = await getRecipeDetail(id);
-    recipeData = response.data;
+    recipeData = await getRecipeDetail(id);
   } catch (error) {
     console.error("레시피를 불러오는데 실패했습니다:", error);
   }
@@ -34,12 +34,6 @@ export default async function RecipePage({ params }) {
       </span>
     );
   };
-
-  // 재료 데이터 가공
-  const ingredientData = recipeData.recipeIngredients?.map(ing => ({
-    label: ing.normalizedNameSnapshot,
-    value: ing.amountText + (ing.unit != null ? ing.unit : "")
-  })) || [];
 
   // 영양 성분 데이터 가공
   const nutritionData = [
@@ -64,9 +58,6 @@ export default async function RecipePage({ params }) {
     ? recipeData.updatedAt.split('T')[0]
     : "정보 없음";
 
-  // 디버깅 전용
-  //return (<pre>{JSON.stringify(recipeData, null, 2)}</pre>);
-
   return (
     <PrivateLayout>
       <div className={styles.recipeContainer}>
@@ -74,7 +65,7 @@ export default async function RecipePage({ params }) {
           <h2 className={styles.recipeSubHeader}>{recipeData.title}</h2>
           <div className="flex gap-3">
             <BookmarkButton recipeId={recipeData.recipeId} />
-            <CookRecipeButton recipeId={recipeData.recipeId} />
+            <CookRecipeButton recipeId={recipeData.recipeId} recipeIngredients={recipeData.recipeIngredients} />
           </div>
         </div>
 
@@ -89,11 +80,7 @@ export default async function RecipePage({ params }) {
               />
             </div>
 
-            <RecipeInfoTable
-              title="재료 정보"
-              data={ingredientData}
-              columns={2}
-            />
+            <RecipeIngredients recipeIngredients={recipeData.recipeIngredients} />
 
             <RecipeInfoTable
               title="영양 성분"
