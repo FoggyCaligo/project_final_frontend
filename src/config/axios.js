@@ -1,8 +1,13 @@
 import axios from "axios";
 
+const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  "/api"
+).replace(/\/$/, "");
+
 const api = axios.create({
-  // 중요: 절대주소 금지. Next.js rewrite를 타도록 상대경로 사용.
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
+  baseURL: API_BASE_URL,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",

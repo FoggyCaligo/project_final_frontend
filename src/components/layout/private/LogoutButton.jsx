@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { logoutApi } from "@/api/authApi";
@@ -8,6 +9,7 @@ import { logoutApi } from "@/api/authApi";
 // loginType: 'general' → 일반 로그아웃 (서버 세션 무효화)
 // loginType: 'kakao'   → 카카오 로그아웃 (카카오 SDK 연동 예정)
 export default function LogoutButton() {
+    const router = useRouter();
     const { user, logout } = useAuth();
 
     const handleGeneralLogout = async () => {
@@ -17,7 +19,9 @@ export default function LogoutButton() {
             // 서버 오류와 관계없이 클라이언트 세션은 초기화
         } finally {
             logout(); // AuthContext 및 sessionStorage 초기화
+            router.push("/");
         }
+
     };
 
     // 카카오 로그아웃: 서버 JWT 세션 무효화 → 카카오 계정 로그아웃 → 프론트 세션 초기화
