@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import RecipeInfoTable from "@/components/recipe/RecipeInfoTable";
 import RecipeIngredients from "@/components/recipe/RecipeIngredients";
 import RecipeStep from "@/components/recipe/RecipeStep";
@@ -6,20 +9,33 @@ import BookmarkButton from "@/components/recipe/BookmarkButton";
 import styles from "./Recipe.module.css";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import { getRecipeDetail } from "@/api/recipeApi";
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 
-export default async function RecipePage({ params }) {
-  let recipeData = null;
+export default function RecipePage() {
+  const params = useParams();
+  const id = params?.id;
+  const [recipeData, setRecipeData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  try {
-    const id = (await params).id || params.id;
-    recipeData = await getRecipeDetail(id);
-  } catch (error) {
-    console.error("레시피를 불러오는데 실패했습니다:", error);
-  }
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchRecipe = async () => {
+      try {
+        const result = await getRecipeDetail(id);
+        setRecipeData(result);
+      } catch (error) {
+        console.error("레시피를 불러오는데 실패했습니다:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecipe();
+  }, [id]);
 
   // 레시피 데이터 없을 시 404 페이지로 이동
-  if (!recipeData) notFound();
+  if (!loading && !recipeData) notFound();
 
   // 난이도 별점 렌더링
   const renderStars = (rating) => {
@@ -34,6 +50,14 @@ export default async function RecipePage({ params }) {
       </span>
     );
   };
+
+  if (loading) {
+    return (
+      <PrivateLayout>
+        <div className="flex justify-center items-center h-screen">로딩 중...</div>
+      </PrivateLayout>
+    );
+  }
 
   // 영양 성분 데이터 가공
   const nutritionData = [
