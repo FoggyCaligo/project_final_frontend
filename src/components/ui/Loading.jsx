@@ -50,6 +50,5 @@ export default function Loading({ isOpen = false, text = "불러오는 중..." }
                 </p>
             </div>
         </div>,
-        document.body
     );
 }
