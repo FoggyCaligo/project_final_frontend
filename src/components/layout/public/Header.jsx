@@ -3,9 +3,11 @@
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import LoginButton from "@/components/layout/public/LoginButton";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Header() {
     const router = useRouter();
+    const { user } = useAuth();
 
     return (
         <header
@@ -36,7 +38,13 @@ export default function Header() {
 
                 {/* 시작하기 버튼 옆에 로그인/로그아웃 버튼 배치 */}
                 <div className="flex items-center gap-3">
-                    <Button handleClick={() => router.push("/dashboard")}>시작하기</Button>
+                    <Button handleClick={() => {
+                        if (user) {
+                            router.push("/dashboard");
+                        } else {
+                            router.push("/signup");
+                        }
+                    }}>시작하기</Button>
                     <LoginButton />
                 </div>
             </div>
