@@ -29,11 +29,17 @@ export default function MealPage() {
         if (!canRequestRecommendation) return;
         
         try {
-            await mealApi.getMealRecommendation();
+            const data = await mealApi.getMealRecommendation();
+            
+            // Save to memory (sessionStorage) rather than relying on DB for the next page
+            if (data) {
+                sessionStorage.setItem('latestHealthReport', JSON.stringify(data));
+            }
+            
             const today = new Date().toDateString();
             localStorage.setItem('lastMealRecommendationDate', today);
             setCanRequestRecommendation(false);
-            alert('식단 추천이 생성되었습니다.');
+            
             router.push('/health-report');
         } catch (error) {
             console.error("Failed to get recommendation:", error);

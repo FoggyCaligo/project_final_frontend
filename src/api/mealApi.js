@@ -40,5 +40,13 @@ export const mealApi = {
     getMealRecommendation: async () => {
         const response = await api.post("/v1/meal/recommendation");
         return unwrapApiData(response);
+    },
+
+    /**
+     * Fetch cached meal recommendation (GET)
+     */
+    getCachedMealRecommendation: async () => {
+        const response = await api.get("/v1/meal/recommendation");
+        return unwrapApiData(response);
     }
 };
