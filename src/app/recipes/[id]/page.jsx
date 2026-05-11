@@ -9,21 +9,16 @@ import { getRecipeDetail } from "@/api/recipeApi";
 import { notFound, redirect } from 'next/navigation';
 
 export default async function RecipePage({ params, searchParams }) {
-  console.log(`[RecipePage] Entering component with params:`, params);
-  
+  // Next.js 15+ 에서 params와 searchParams는 Promise이므로 await가 필요합니다.
+  const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
-  if (resolvedSearchParams && resolvedSearchParams._rsc) {
-    const resolvedParams = await params;
-    const cleanUrl = `/recipes/${resolvedParams.id}`;
-    console.log(`[RecipePage] Redirecting to clean URL: ${cleanUrl}`);
-    redirect(cleanUrl);
-  }
+  const id = resolvedParams?.id;
 
+  console.log(`[RecipePage] Entering component for ID: ${id}`);
+  
   let recipeData = null;
 
   try {
-    const resolvedParams = await params;
-    const id = resolvedParams?.id;
     console.log(`[RecipePage] Fetching recipe detail for ID: ${id}`);
     
     const response = await getRecipeDetail(id);
@@ -98,7 +93,10 @@ export default async function RecipePage({ params, searchParams }) {
           <h2 className={styles.recipeSubHeader}>{recipeData.title}</h2>
           <div className="flex gap-3">
             <BookmarkButton recipeId={recipeData.recipeId} />
-            <CookRecipeButton recipeId={recipeData.recipeId} />
+            <CookRecipeButton 
+              recipeId={recipeData.recipeId} 
+              recipeIngredients={recipeData.recipeIngredients} 
+            />
           </div>
         </div>
 
@@ -113,11 +111,7 @@ export default async function RecipePage({ params, searchParams }) {
               />
             </div>
 
-            <RecipeInfoTable
-              title="재료 정보"
-              data={ingredientData}
-              columns={2}
-            />
+            <RecipeIngredients recipeIngredients={recipeData.recipeIngredients} />
 
             <RecipeInfoTable
               title="영양 성분"
