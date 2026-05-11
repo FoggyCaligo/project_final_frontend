@@ -7,9 +7,9 @@ import RecipeStep from "@/components/recipe/RecipeStep";
 import CookRecipeButton from "@/components/recipe/CookRecipeButton";
 import BookmarkButton from "@/components/recipe/BookmarkButton";
 import styles from "./Recipe.module.css";
-import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import { getRecipeDetail } from "@/api/recipeApi";
 import { notFound, useParams } from 'next/navigation';
+import PublicLayout from "@/components/layout/public/PublicLayout";
 
 export default function RecipePage() {
   const params = useParams();
@@ -53,9 +53,9 @@ export default function RecipePage() {
 
   if (loading) {
     return (
-      <PrivateLayout>
+      <PublicLayout>
         <div className="flex justify-center items-center h-screen">로딩 중...</div>
-      </PrivateLayout>
+      </PublicLayout>
     );
   }
 
@@ -83,7 +83,7 @@ export default function RecipePage() {
     : "정보 없음";
 
   return (
-    <PrivateLayout>
+    <PublicLayout>
       <div className={styles.recipeContainer}>
         <div className="flex justify-between items-center mb-6">
           <h2 className={styles.recipeSubHeader}>{recipeData.title}</h2>
@@ -137,6 +137,6 @@ export default function RecipePage() {
           </div>
         </div>
       </div>
-    </PrivateLayout>
+    </PublicLayout>
   );
 }
