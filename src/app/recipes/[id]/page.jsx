@@ -93,7 +93,10 @@ export default async function RecipePage({ params, searchParams }) {
           <h2 className={styles.recipeSubHeader}>{recipeData.title}</h2>
           <div className="flex gap-3">
             <BookmarkButton recipeId={recipeData.recipeId} />
-            <CookRecipeButton recipeId={recipeData.recipeId} />
+            <CookRecipeButton 
+              recipeId={recipeData.recipeId} 
+              recipeIngredients={recipeData.recipeIngredients} 
+            />
           </div>
         </div>
 
@@ -108,11 +111,7 @@ export default async function RecipePage({ params, searchParams }) {
               />
             </div>
 
-            <RecipeInfoTable
-              title="재료 정보"
-              data={ingredientData}
-              columns={2}
-            />
+            <RecipeIngredients recipeIngredients={recipeData.recipeIngredients} />
 
             <RecipeInfoTable
               title="영양 성분"
