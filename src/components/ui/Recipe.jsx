@@ -4,9 +4,9 @@ import BookMarkButton from "./BookMarkButton";
 import CustomTag from "./Tag";
 import { Tooltip } from "antd";
 import { addBookmark, removeBookmark, checkBookmarkStatus } from "@/api/bookmarkApi";
-import { getMeApi, user } from "@/api/authApi";
 import { getSubstitutionSuggestions } from "@/api/substitutionApi";
 import Modal from "./Modal";
+import { useAuth } from "@/context/AuthContext";
 
 const conditionTagMap = {
     DIABETES_LOW_SUGAR: { label: "당뇨 주의", variant: "accent" },
@@ -37,6 +37,7 @@ export default function Recipe({
     ownedIngredients = [],
     onBookmarkToggle
 }) {
+    const { user } = useAuth();
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [substitutionData, setSubstitutionData] = useState(null);
     const [isSubstitutionOpen, setIsSubstitutionOpen] = useState(false);
@@ -50,11 +51,7 @@ export default function Recipe({
                     return;
                 }
 
-                let userId = user?.userId;
-                if (!userId) {
-                    const me = await getMeApi();
-                    userId = me?.userId;
-                }
+                const userId = user?.userId;
 
                 if (!userId) {
                     setIsBookmarked(false);
@@ -70,17 +67,13 @@ export default function Recipe({
         };
 
         fetchBookmarkStatus();
-    }, [recipeId]);
+    }, [recipeId, user?.userId]);
 
     const handleBookmarkToggle = async (nextBookmarked) => {
         try {
             if (!recipeId) return false;
 
-            let userId = user?.userId;
-            if (!userId) {
-                const me = await getMeApi();
-                userId = me?.userId;
-            }
+            const userId = user?.userId;
             if (!userId) return false;
 
             if (nextBookmarked === false) {

@@ -8,14 +8,6 @@ const nextConfig = {
   allowedDevOrigins: [
     "*.trycloudflare.com",
   ],
-  async rewrites() {
-    return [
-      {
-        source: "/api/v1/:path*",
-        destination: "/api/v1/:path*",
-      },
-    ];
-  },
   turbopack: {
     root: projectRoot,
   },
