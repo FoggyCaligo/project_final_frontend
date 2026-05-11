@@ -1,3 +1,4 @@
+import RecipeIngredients from "@/components/recipe/RecipeIngredients";
 import RecipeInfoTable from "@/components/recipe/RecipeInfoTable";
 import RecipeStep from "@/components/recipe/RecipeStep";
 import CookRecipeButton from "@/components/recipe/CookRecipeButton";
@@ -5,21 +6,50 @@ import BookmarkButton from "@/components/recipe/BookmarkButton";
 import styles from "./Recipe.module.css";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import { getRecipeDetail } from "@/api/recipeApi";
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
-export default async function RecipePage({ params }) {
+export default async function RecipePage({ params, searchParams }) {
+  console.log(`[RecipePage] Entering component with params:`, params);
+  
+  const resolvedSearchParams = await searchParams;
+  if (resolvedSearchParams && resolvedSearchParams._rsc) {
+    const resolvedParams = await params;
+    const cleanUrl = `/recipes/${resolvedParams.id}`;
+    console.log(`[RecipePage] Redirecting to clean URL: ${cleanUrl}`);
+    redirect(cleanUrl);
+  }
+
   let recipeData = null;
 
   try {
-    const id = (await params).id || params.id;
+    const resolvedParams = await params;
+    const id = resolvedParams?.id;
+    console.log(`[RecipePage] Fetching recipe detail for ID: ${id}`);
+    
     const response = await getRecipeDetail(id);
-    recipeData = response.data;
+    console.log(`[RecipePage] Successfully fetched recipe data:`, {
+      id: response?.recipeId,
+      title: response?.title,
+      stepCount: response?.recipeSteps?.length
+    });
+    
+    recipeData = response; 
   } catch (error) {
-    console.error("레시피를 불러오는데 실패했습니다:", error);
+    console.error("[RecipePage] Failed to fetch recipe:", error);
+    if (error.name === 'ApiError') {
+      console.error("[RecipePage] ApiError details:", {
+        status: error.status,
+        url: error.url,
+        message: error.message,
+        code: error.code
+      });
+    }
   }
 
-  // 레시피 데이터 없을 시 404 페이지로 이동
-  if (!recipeData) notFound();
+  if (!recipeData) {
+    console.log("[RecipePage] No recipe data found, triggering notFound()");
+    notFound();
+  }
 
   // 난이도 별점 렌더링
   const renderStars = (rating) => {
@@ -34,20 +64,6 @@ export default async function RecipePage({ params }) {
       </span>
     );
   };
-
-  if (loading) {
-    return (
-      <PrivateLayout>
-        <div className="flex justify-center items-center h-screen">로딩 중...</div>
-      </PrivateLayout>
-    );
-  }
-
-  // 재료 데이터 가공
-  const ingredientData = recipeData.recipeIngredients?.map(ing => ({
-    label: ing.normalizedNameSnapshot,
-    value: ing.amountText + (ing.unit != null ? ing.unit : "")
-  })) || [];
 
   // 영양 성분 데이터 가공
   const nutritionData = [
@@ -97,11 +113,7 @@ export default async function RecipePage({ params }) {
               />
             </div>
 
-            <RecipeInfoTable
-              title="재료 정보"
-              data={ingredientData}
-              columns={2}
-            />
+            <RecipeIngredients recipeIngredients={recipeData.recipeIngredients} />
 
             <RecipeInfoTable
               title="영양 성분"
