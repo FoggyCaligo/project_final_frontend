@@ -8,6 +8,7 @@ import CustomTag from '@/components/ui/Tag';
 import Section from '@/components/ui/Section';
 import { getBookmarkedRecipes } from '@/api/bookmarkApi';
 import { uploadImages, getPostDetail, updatePost } from '@/api/postApi';
+import { fileAssetPublicUrl } from '@/lib/fileAssetUrl';
 
 export default function CommunityEditPage() {
     const { postId } = useParams();
@@ -74,7 +75,7 @@ export default function CommunityEditPage() {
                 if (postData.images && postData.images.length > 0) {
                     const loadedImages = postData.images.map((img, idx) => ({
                         id: `existing-${idx}`,
-                        preview: `https://www.todayfridge.today/uploads/community/${img.storedName}`,
+                        preview: fileAssetPublicUrl(img.storagePath, img.storedName),
                         isExisting: true,
                         storedName: img.storedName
                     }));

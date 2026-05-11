@@ -9,6 +9,7 @@ import Section from '@/components/ui/Section';
 import PostCard from '@/app/community/components/PostCard';
 import { getBookmarkedRecipes } from '@/api/bookmarkApi';
 import { uploadImages, createPost, getUserPosts } from '@/api/postApi';
+import { fileAssetPublicUrl } from '@/lib/fileAssetUrl';
 
 export default function CommunityRegisterPage() {
     const [images, setImages] = useState([]);
@@ -72,7 +73,7 @@ export default function CommunityRegisterPage() {
     
     const getImageUrl = (storagePath, storedName) => {
         if (!storedName) return placeholderSvg;
-        return `https://www.todayfridge.today/uploads/community/${storedName}`;
+        return fileAssetPublicUrl(storagePath, storedName);
     };
 
     const processFiles = (files) => {

@@ -1,8 +1,13 @@
 import axios from "axios";
 
+const UPLOAD_API_URL =
+  process.env.NEXT_PUBLIC_APACHE_UPLOAD_URL ??
+  process.env.NEXT_PUBLIC_UPLOAD_API_URL ??
+  "http://localhost:8080/preload_test.php";
+
 const uploadApi = axios.create({
-  // 환경 변수가 없으면 기본값(하드코딩 IP) 사용
-  baseURL: process.env.NEXT_PUBLIC_APACHE_UPLOAD_URL ?? "https://www.todayfridge.today/preload_test.php",
+  // 로컬/서버 모두 환경변수 우선, 미설정 시 개발 기본값 사용
+  baseURL: UPLOAD_API_URL,
 });
 
 uploadApi.interceptors.response.use(
