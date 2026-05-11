@@ -38,10 +38,30 @@ function isRetryableNetworkError(error) {
 
 api.interceptors.request.use(
   (config) => {
+    if (typeof window !== "undefined") {
+      const userRaw =
+        sessionStorage.getItem("user") ||
+        localStorage.getItem("user");
+
+      if (userRaw) {
+        try {
+          const user = JSON.parse(userRaw);
+
+          if (user?.id) {
+            config.headers["X-User-Id"] = String(user.id);
+          }
+        } catch {
+          // user 저장값이 JSON이 아니면 무시
+        }
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
 );
+console.log("API_BASE_URL =", API_BASE_URL);
+console.log("X-User-Id =", config.headers["X-User-Id"]);
 
 api.interceptors.response.use(
   (response) => response,
