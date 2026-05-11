@@ -58,8 +58,10 @@ export default function CommunityDetailPage() {
                 if (data.authorUserId !== currentUserId) {
                     if (data.recipeId) {
                         // 💡 수정됨: 파라미터 순서를 (recipeId, userId)로 변경
-                        const bookmarkData = await checkBookmarkStatus(data.recipeId, currentUserId);
-                        setIsBookmarked(bookmarkData.isBookmarked);
+                        const bookmarkData = await checkBookmarkStatus(data.recipeId);
+                        setIsBookmarked(
+                            bookmarkData === true || bookmarkData?.isBookmarked === true
+                        );
                     }
                     const reportData = await getPostReportStatus(postId, currentUserId);
                     setIsReported(reportData.isReported);
@@ -113,11 +115,11 @@ export default function CommunityDetailPage() {
         try {
             if (isBookmarked) {
                 // 💡 수정됨: 파라미터 순서를 (recipeId, userId)로 변경
-                await removeBookmark(post.recipeId, currentUserId);
+                await removeBookmark(post.recipeId);
                 setIsBookmarked(false);
             } else {
                 // 💡 수정됨: 파라미터 순서를 (recipeId, userId)로 변경
-                await addBookmark(post.recipeId, currentUserId);
+                await addBookmark(post.recipeId);
                 setIsBookmarked(true);
             }
         } catch (error) {
