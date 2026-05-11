@@ -1,3 +1,7 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useParams, useSearchParams, notFound } from "next/navigation";
 import RecipeIngredients from "@/components/recipe/RecipeIngredients";
 import RecipeInfoTable from "@/components/recipe/RecipeInfoTable";
 import RecipeStep from "@/components/recipe/RecipeStep";
@@ -6,56 +10,74 @@ import BookmarkButton from "@/components/recipe/BookmarkButton";
 import styles from "./Recipe.module.css";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import { getRecipeDetail } from "@/api/recipeApi";
-import { notFound, redirect } from 'next/navigation';
 
-export default async function RecipePage({ params, searchParams }) {
-  // Next.js 15+ 에서 params와 searchParams는 Promise이므로 await가 필요합니다.
-  const resolvedParams = await params;
-  const resolvedSearchParams = await searchParams;
-  const id = resolvedParams?.id;
+export default function RecipePage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const id = params?.id;
 
-  console.log(`[RecipePage] Entering component for ID: ${id}`);
-  
-  let recipeData = null;
+  console.log(`[Step 1] 레시피 상세 페이지 컴포넌트 로드 시작 (ID: ${id})`);
 
-  try {
-    console.log(`[RecipePage] Fetching recipe detail for ID: ${id}`);
-    
-    const response = await getRecipeDetail(id);
-    console.log(`[RecipePage] Successfully fetched recipe data:`, {
-      id: response?.recipeId,
-      title: response?.title,
-      stepCount: response?.recipeSteps?.length
-    });
-    
-    recipeData = response; 
-  } catch (error) {
-    console.error("[RecipePage] Failed to fetch recipe:", error);
-    if (error.name === 'ApiError') {
-      console.error("[RecipePage] ApiError details:", {
-        status: error.status,
-        url: error.url,
-        message: error.message,
-        code: error.code
-      });
+  const [recipeData, setRecipeData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!id) {
+      console.log(`[Step 2] ID가 없어 데이터 fetching을 건너뜁니다.`);
+      return;
     }
+
+    const fetchData = async () => {
+      console.log(`[Step 2] 데이터 fetching 시작 (ID: ${id})`);
+      setLoading(true);
+      try {
+        const response = await getRecipeDetail(id);
+        console.log(`[Step 3] API 응답 성공:`, {
+          title: response?.title,
+          ingredientsCount: response?.recipeIngredients?.length
+        });
+        setRecipeData(response);
+      } catch (err) {
+        console.error("[Step 3] API 호출 중 오류 발생:", err);
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id]);
+
+  if (loading) {
+    console.log(`[Step 4] 로딩 화면 렌더링 중...`);
+    return (
+      <PrivateLayout>
+        <div className="flex justify-center items-center h-80">
+          <div className={styles.loader}></div>
+        </div>
+      </PrivateLayout>
+    );
   }
 
-  if (!recipeData) {
-    console.log("[RecipePage] No recipe data found, triggering notFound()");
-    notFound();
+  if (error || !recipeData) {
+    console.log("[Step 4] 에러 발생 또는 데이터 없음 - 404 페이지로 이동");
+    return notFound();
   }
 
+  console.log("[Step 5] 데이터 가공 시작 (영양 성분 및 메타데이터)");
   // 난이도 별점 렌더링
   const renderStars = (rating) => {
-    if (rating == "초급") rating = 2;
-    else if (rating == "중급") rating = 3;
-    else if (rating == "고급") rating = 4;
-    else if (rating == "아무나") rating = 1;
+    let stars = 0;
+    if (rating == "초급") stars = 2;
+    else if (rating == "중급") stars = 3;
+    else if (rating == "고급") stars = 4;
+    else if (rating == "아무나") stars = 1;
     else return (<span>정보 없음</span>);
+    
     return (
       <span className={styles.starRating}>
-        {"★".repeat(rating)}{"☆".repeat(5 - rating)}
+        {"★".repeat(stars)}{"☆".repeat(5 - stars)}
       </span>
     );
   };
@@ -83,8 +105,7 @@ export default async function RecipePage({ params, searchParams }) {
     ? recipeData.updatedAt.split('T')[0]
     : "정보 없음";
 
-  // 디버깅 전용
-  //return (<pre>{JSON.stringify(recipeData, null, 2)}</pre>);
+  console.log("[Step 6] 페이지 최종 렌더링 시작");
 
   return (
     <PrivateLayout>
