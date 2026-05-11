@@ -31,6 +31,12 @@ describe("mypage normalizers", () => {
         email: "dongjoo@example.com",
         name: "Dongjoo",
         profileImage: "/profile.png",
+        height: 178,
+        weight: 72,
+        gender: "MALE",
+        age: 28,
+        hasMilkAllergy: true,
+        lowSalt: true,
       }),
     ).toEqual(
       expect.objectContaining({
@@ -39,6 +45,12 @@ describe("mypage normalizers", () => {
         email: "dongjoo@example.com",
         nickname: "Dongjoo",
         profileImageUrl: "/profile.png",
+        heightCm: 178,
+        weightKg: 72,
+        gender: "MALE",
+        age: 28,
+        milkAllergy: true,
+        lowSodium: true,
       }),
     );
   });

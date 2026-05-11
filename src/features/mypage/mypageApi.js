@@ -38,6 +38,15 @@ async function requestCurrentProfile() {
   return normalizeProfile(unwrapApiData(response, null));
 }
 
+export async function requestPasswordChange({ currentPassword, newPassword }) {
+  const response = await api.patch("/v1/users/me/password", {
+    currentPassword,
+    newPassword,
+  });
+
+  return unwrapApiData(response, null);
+}
+
 export async function requestMyPageData() {
   let profile = null;
 
