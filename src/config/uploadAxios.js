@@ -1,9 +1,8 @@
 import axios from "axios";
 
 const UPLOAD_API_URL =
-  process.env.NEXT_PUBLIC_APACHE_UPLOAD_URL ??
-  process.env.NEXT_PUBLIC_UPLOAD_API_URL ??
-  "http://localhost:8080/preload_test.php";
+  process.env.NEXT_PUBLIC_APACHE_UPLOAD_URL ?? "https://www.todayfridge.today/upload_commu_image.php";
+  process.env.NEXT_PUBLIC_UPLOAD_API_URL ?? "https://www.todayfridge.today/upload_fridge_image.php";
 
 const uploadApi = axios.create({
   // 로컬/서버 모두 환경변수 우선, 미설정 시 개발 기본값 사용

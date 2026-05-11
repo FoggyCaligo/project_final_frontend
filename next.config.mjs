@@ -7,17 +7,9 @@ const API_PROXY_TARGET =
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ["*.trycloudflare.com"],
-
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${API_PROXY_TARGET}/api/:path*`,
-      },
-    ];
-  },
-
+  allowedDevOrigins: [
+    "*.trycloudflare.com",
+  ],
   turbopack: {
     root: projectRoot,
   },

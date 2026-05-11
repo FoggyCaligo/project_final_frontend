@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import RecipeInfoTable from "@/components/recipe/RecipeInfoTable";
+import React, { useState, useEffect } from "react";
+import { useParams, useSearchParams, notFound } from "next/navigation";
 import RecipeIngredients from "@/components/recipe/RecipeIngredients";
+import RecipeInfoTable from "@/components/recipe/RecipeInfoTable";
 import RecipeStep from "@/components/recipe/RecipeStep";
 import CookRecipeButton from "@/components/recipe/CookRecipeButton";
 import BookmarkButton from "@/components/recipe/BookmarkButton";
@@ -13,51 +14,74 @@ import PublicLayout from "@/components/layout/public/PublicLayout";
 
 export default function RecipePage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = params?.id;
+
+  console.log(`[Step 1] 레시피 상세 페이지 컴포넌트 로드 시작 (ID: ${id})`);
+
   const [recipeData, setRecipeData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      console.log(`[Step 2] ID가 없어 데이터 fetching을 건너뜁니다.`);
+      return;
+    }
 
-    const fetchRecipe = async () => {
+    const fetchData = async () => {
+      console.log(`[Step 2] 데이터 fetching 시작 (ID: ${id})`);
+      setLoading(true);
       try {
-        const result = await getRecipeDetail(id);
-        setRecipeData(result);
-      } catch (error) {
-        console.error("레시피를 불러오는데 실패했습니다:", error);
+        const response = await getRecipeDetail(id);
+        console.log(`[Step 3] API 응답 성공:`, {
+          title: response?.title,
+          ingredientsCount: response?.recipeIngredients?.length
+        });
+        setRecipeData(response);
+      } catch (err) {
+        console.error("[Step 3] API 호출 중 오류 발생:", err);
+        setError(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRecipe();
+    fetchData();
   }, [id]);
 
-  // 레시피 데이터 없을 시 404 페이지로 이동
-  if (!loading && !recipeData) notFound();
-
-  // 난이도 별점 렌더링
-  const renderStars = (rating) => {
-    if (rating == "초급") rating = 2;
-    else if (rating == "중급") rating = 3;
-    else if (rating == "고급") rating = 4;
-    else if (rating == "아무나") rating = 1;
-    else return (<span>정보 없음</span>);
-    return (
-      <span className={styles.starRating}>
-        {"★".repeat(rating)}{"☆".repeat(5 - rating)}
-      </span>
-    );
-  };
-
   if (loading) {
+    console.log(`[Step 4] 로딩 화면 렌더링 중...`);
     return (
       <PublicLayout>
-        <div className="flex justify-center items-center h-screen">로딩 중...</div>
+        <div className="flex justify-center items-center h-80">
+          <div className={styles.loader}></div>
+        </div>
       </PublicLayout>
     );
   }
+
+  if (error || !recipeData) {
+    console.log("[Step 4] 에러 발생 또는 데이터 없음 - 404 페이지로 이동");
+    return notFound();
+  }
+
+  console.log("[Step 5] 데이터 가공 시작 (영양 성분 및 메타데이터)");
+  // 난이도 별점 렌더링
+  const renderStars = (rating) => {
+    let stars = 0;
+    if (rating == "초급") stars = 2;
+    else if (rating == "중급") stars = 3;
+    else if (rating == "고급") stars = 4;
+    else if (rating == "아무나") stars = 1;
+    else return (<span>정보 없음</span>);
+
+    return (
+      <span className={styles.starRating}>
+        {"★".repeat(stars)}{"☆".repeat(5 - stars)}
+      </span>
+    );
+  };
 
   // 영양 성분 데이터 가공
   const nutritionData = [
@@ -82,6 +106,8 @@ export default function RecipePage() {
     ? recipeData.updatedAt.split('T')[0]
     : "정보 없음";
 
+  console.log("[Step 6] 페이지 최종 렌더링 시작");
+
   return (
     <PublicLayout>
       <div className={styles.recipeContainer}>
@@ -89,7 +115,10 @@ export default function RecipePage() {
           <h2 className={styles.recipeSubHeader}>{recipeData.title}</h2>
           <div className="flex gap-3">
             <BookmarkButton recipeId={recipeData.recipeId} />
-            <CookRecipeButton recipeId={recipeData.recipeId} recipeIngredients={recipeData.recipeIngredients} />
+            <CookRecipeButton
+              recipeId={recipeData.recipeId}
+              recipeIngredients={recipeData.recipeIngredients}
+            />
           </div>
         </div>
 

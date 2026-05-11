@@ -4,9 +4,9 @@ import BookMarkButton from "./BookMarkButton";
 import CustomTag from "./Tag";
 import { Tooltip } from "antd";
 import { addBookmark, removeBookmark, checkBookmarkStatus } from "@/api/bookmarkApi";
-import { getMeApi, user } from "@/api/authApi";
 import { getSubstitutionSuggestions } from "@/api/substitutionApi";
 import Modal from "./Modal";
+import { useAuth } from "@/context/AuthContext";
 
 const conditionTagMap = {
     DIABETES_LOW_SUGAR: { label: "당뇨 주의", variant: "accent" },
@@ -37,6 +37,7 @@ export default function Recipe({
     ownedIngredients = [],
     onBookmarkToggle
 }) {
+    const { user } = useAuth();
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [substitutionData, setSubstitutionData] = useState(null);
     const [isSubstitutionOpen, setIsSubstitutionOpen] = useState(false);
@@ -50,19 +51,17 @@ export default function Recipe({
                     return;
                 }
 
-                let userId = user?.userId;
-                if (!userId) {
-                    const me = await getMeApi();
-                    userId = me?.userId;
-                }
+                const userId = user?.userId;
 
                 if (!userId) {
                     setIsBookmarked(false);
                     return;
                 }
 
-                const status = await checkBookmarkStatus(recipeId, userId);
-                setIsBookmarked(Boolean(status?.isBookmarked));
+                const status = await checkBookmarkStatus(recipeId);
+                setIsBookmarked(
+                    status === true || status?.isBookmarked === true
+                );
             } catch (error) {
                 console.error("북마크 상태 확인 실패:", error);
                 setIsBookmarked(false);
@@ -70,27 +69,23 @@ export default function Recipe({
         };
 
         fetchBookmarkStatus();
-    }, [recipeId]);
+    }, [recipeId, user?.userId]);
 
     const handleBookmarkToggle = async (nextBookmarked) => {
         try {
             if (!recipeId) return false;
 
-            let userId = user?.userId;
-            if (!userId) {
-                const me = await getMeApi();
-                userId = me?.userId;
-            }
+            const userId = user?.userId;
             if (!userId) return false;
 
             if (nextBookmarked === false) {
-                await removeBookmark(recipeId, userId);
+                await removeBookmark(recipeId);
                 setIsBookmarked(false);
                 onBookmarkToggle?.(false);
                 return false;
             }
 
-            await addBookmark(recipeId, userId);
+            await addBookmark(recipeId);
             setIsBookmarked(true);
             onBookmarkToggle?.(true);
             return true;

@@ -8,7 +8,6 @@ import CustomTag from '@/components/ui/Tag';
 import Section from '@/components/ui/Section';
 import { getBookmarkedRecipes } from '@/api/bookmarkApi';
 import { uploadImages, getPostDetail, updatePost } from '@/api/postApi';
-import { fileAssetPublicUrl } from '@/lib/fileAssetUrl';
 
 export default function CommunityEditPage() {
     const { postId } = useParams();
@@ -75,7 +74,7 @@ export default function CommunityEditPage() {
                 if (postData.images && postData.images.length > 0) {
                     const loadedImages = postData.images.map((img, idx) => ({
                         id: `existing-${idx}`,
-                        preview: fileAssetPublicUrl(img.storagePath, img.storedName),
+                        preview: `https://www.todayfridge.today/uploads/community/${img.storedName}`,
                         isExisting: true,
                         storedName: img.storedName
                     }));
@@ -335,10 +334,6 @@ export default function CommunityEditPage() {
                                 <img className="w-full h-full object-cover" src={placeholderSvg} alt="비어 있음" />
                             </div>
                         )}
-                        <div className="flex flex-wrap gap-2 mt-4">
-                            <CustomTag variant="secondary">기존 이미지 유지 가능</CustomTag>
-                            <CustomTag color="success">PATCH 메소드 대응</CustomTag>
-                        </div>
                     </Card>
                 </div>
             </Section>
