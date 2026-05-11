@@ -8,8 +8,9 @@ import RecipeStep from "@/components/recipe/RecipeStep";
 import CookRecipeButton from "@/components/recipe/CookRecipeButton";
 import BookmarkButton from "@/components/recipe/BookmarkButton";
 import styles from "./Recipe.module.css";
-import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import { getRecipeDetail } from "@/api/recipeApi";
+import { notFound, useParams } from 'next/navigation';
+import PublicLayout from "@/components/layout/public/PublicLayout";
 
 export default function RecipePage() {
   const params = useParams();
@@ -52,11 +53,11 @@ export default function RecipePage() {
   if (loading) {
     console.log(`[Step 4] 로딩 화면 렌더링 중...`);
     return (
-      <PrivateLayout>
+      <PublicLayout>
         <div className="flex justify-center items-center h-80">
           <div className={styles.loader}></div>
         </div>
-      </PrivateLayout>
+      </PublicLayout>
     );
   }
 
@@ -74,7 +75,7 @@ export default function RecipePage() {
     else if (rating == "고급") stars = 4;
     else if (rating == "아무나") stars = 1;
     else return (<span>정보 없음</span>);
-    
+
     return (
       <span className={styles.starRating}>
         {"★".repeat(stars)}{"☆".repeat(5 - stars)}
@@ -108,15 +109,15 @@ export default function RecipePage() {
   console.log("[Step 6] 페이지 최종 렌더링 시작");
 
   return (
-    <PrivateLayout>
+    <PublicLayout>
       <div className={styles.recipeContainer}>
         <div className="flex justify-between items-center mb-6">
           <h2 className={styles.recipeSubHeader}>{recipeData.title}</h2>
           <div className="flex gap-3">
             <BookmarkButton recipeId={recipeData.recipeId} />
-            <CookRecipeButton 
-              recipeId={recipeData.recipeId} 
-              recipeIngredients={recipeData.recipeIngredients} 
+            <CookRecipeButton
+              recipeId={recipeData.recipeId}
+              recipeIngredients={recipeData.recipeIngredients}
             />
           </div>
         </div>
@@ -165,6 +166,6 @@ export default function RecipePage() {
           </div>
         </div>
       </div>
-    </PrivateLayout>
+    </PublicLayout>
   );
 }
