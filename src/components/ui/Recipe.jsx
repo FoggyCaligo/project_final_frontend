@@ -6,6 +6,7 @@ import { Tooltip } from "antd";
 import { addBookmark, removeBookmark, checkBookmarkStatus } from "@/api/bookmarkApi";
 import { getMeApi, user } from "@/api/authApi";
 import { getSubstitutionSuggestions } from "@/api/substitutionApi";
+import Modal from "./Modal";
 
 const conditionTagMap = {
     DIABETES_LOW_SUGAR: { label: "당뇨 주의", variant: "accent" },
@@ -102,7 +103,7 @@ export default function Recipe({
         e.stopPropagation();
 
         if (substitutionData) {
-            setIsSubstitutionOpen(prev => !prev);
+            setIsSubstitutionOpen(true);
             return;
         }
 
@@ -121,6 +122,22 @@ export default function Recipe({
         } finally {
             setIsSubstitutionLoading(false);
         }
+    };
+    const decisionTypeStyles = {
+        SUBSTITUTE_AVAILABLE:
+            "bg-green-100 text-green-700 border border-green-200",
+
+        OPTIONAL:
+            "bg-amber-100 text-amber-700 border border-amber-200",
+
+        REQUIRED:
+            "bg-rose-100 text-rose-700 border border-rose-200",
+    };
+
+    const decisionTypeLabels = {
+        SUBSTITUTE_AVAILABLE: "대체 가능",
+        OPTIONAL: "생략 가능",
+        REQUIRED: "필수 재료",
     };
     return (
         <div className="w-full overflow-hidden rounded-2xl bg-gray-100 border border-gray-100 flex flex-col">
@@ -232,18 +249,14 @@ export default function Recipe({
 
 
                             {missingIngredients.length > 0 && (
-                                <button
-                                    type="button"
-                                    className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 border border-gray-200 hover:bg-gray-50"
+                                <CustomTag
+                                    variant="action"
                                     onClick={handleSubstitutionClick}
-                                    disabled={isSubstitutionLoading}
                                 >
                                     {isSubstitutionLoading
                                         ? "확인 중..."
-                                        : isSubstitutionOpen
-                                            ? "접기"
-                                            : "대체재 보기"}
-                                </button>
+                                        : "대체재 보기"}
+                                </CustomTag>
                             )}
 
                         </div>
@@ -263,47 +276,52 @@ export default function Recipe({
                             </div>
                         )}
                         {isSubstitutionOpen && substitutionData && (
-                            <div className="rounded-xl bg-white/80 p-3 text-sm text-gray-700 leading-relaxed">
-                                <div className="mb-2 text-xs font-semibold text-gray-500">
-                                    대체재 추천
-                                </div>
-
-                                <div className="flex flex-col gap-2">
-                                    {substitutionData.results.map((item, index) => (
+                            <Modal
+                                isOpen={isSubstitutionOpen}
+                                title="대체재 추천"
+                                description="보유 재료를 기준으로 부족 재료의 대체 가능성을 판단했어요."
+                                onClose={() => setIsSubstitutionOpen(false)}
+                                showFooter={false}
+                            >
+                                <div className="flex flex-col gap-3">
+                                    {substitutionData?.results?.map((item, index) => (
                                         <div
                                             key={`${item.missingIngredient}-${index}`}
-                                            className="rounded-lg bg-gray-50 p-2"
+                                            className="rounded-xl border border-gray-100 bg-white p-3"
                                         >
-                                            <div className="text-xs font-semibold text-gray-800">
-                                                {item.missingIngredient}
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div className="text-sm font-bold text-gray-800">
+                                                    {item.missingIngredient}
+                                                </div>
+
+                                                <span
+                                                    className={`
+        rounded-full
+        px-2 py-1
+        text-xs font-semibold
+        ${decisionTypeStyles[item.decisionType]}
+    `}
+                                                >
+                                                    {decisionTypeLabels[item.decisionType]}
+                                                </span>
                                             </div>
 
-                                            <div className="mt-1 text-xs text-gray-600">
-                                                {item.decisionType === "SUBSTITUTE_AVAILABLE" && (
-                                                    <>
-                                                        대체 가능:{" "}
-                                                        <span className="font-medium text-gray-800">
-                                                            {item.substituteIngredient}
-                                                        </span>
-                                                    </>
-                                                )}
+                                            {item.decisionType === "SUBSTITUTE_AVAILABLE" && (
+                                                <div className="mt-2 text-sm text-gray-700">
+                                                    대체재:{" "}
+                                                    <span className="font-semibold">
+                                                        {item.substituteIngredient}
+                                                    </span>
+                                                </div>
+                                            )}
 
-                                                {item.decisionType === "OPTIONAL" && (
-                                                    <>생략 가능</>
-                                                )}
-
-                                                {item.decisionType === "REQUIRED" && (
-                                                    <>필수 재료</>
-                                                )}
-                                            </div>
-
-                                            <div className="mt-1 text-xs text-gray-500">
+                                            <div className="mt-2 text-xs leading-relaxed text-gray-500">
                                                 {item.reason}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </Modal>
                         )}
 
                     </>
