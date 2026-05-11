@@ -113,7 +113,11 @@ export default async function RecipePage({ params, searchParams }) {
               />
             </div>
 
-            <RecipeIngredients recipeIngredients={recipeData.recipeIngredients} />
+            <RecipeInfoTable
+              title="재료 정보"
+              data={ingredientData}
+              columns={2}
+            />
 
             <RecipeInfoTable
               title="영양 성분"
