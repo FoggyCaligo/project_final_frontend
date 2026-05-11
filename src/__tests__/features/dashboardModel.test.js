@@ -1,13 +1,14 @@
 import { buildDashboardView } from "@/features/dashboard/dashboardModel";
+import { vi } from "vitest";
 
 describe("buildDashboardView", () => {
   beforeEach(() => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date("2026-05-07T09:00:00"));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-07T09:00:00"));
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("builds summary cards, soon items, recipes, and personalization signals", () => {
