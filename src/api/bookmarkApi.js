@@ -25,8 +25,20 @@ export const removeBookmark = async (recipeId) => {
 // GET /v1/bookmarks/{recipeId}
 // 현재 로그인 사용자 기준 북마크 여부(Boolean) 조회
 export const checkBookmarkStatus = async (recipeId) => {
-    const response = await api.get(`/v1/bookmarks/${recipeId}`);
-    return unwrapApiData(response, null);
+    const toBookmarkFlag = (payload) => {
+        if (typeof payload === "boolean") return payload;
+        if (typeof payload?.isBookmarked === "boolean") return payload.isBookmarked;
+        return false;
+    };
+
+    try {
+        const response = await api.get(`/v1/bookmarks/${recipeId}`);
+        return toBookmarkFlag(unwrapApiData(response, null));
+    } catch (error) {
+        // Backward compatibility: some deployments expose bookmark status at /status.
+        const fallbackResponse = await api.get(`/v1/bookmarks/${recipeId}/status`);
+        return toBookmarkFlag(unwrapApiData(fallbackResponse, null));
+    }
 };
 
 export const toggleBookmark = async (recipeId) => {

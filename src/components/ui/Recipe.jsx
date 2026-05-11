@@ -58,8 +58,10 @@ export default function Recipe({
                     return;
                 }
 
-                const status = await checkBookmarkStatus(recipeId, userId);
-                setIsBookmarked(Boolean(status?.isBookmarked));
+                const status = await checkBookmarkStatus(recipeId);
+                setIsBookmarked(
+                    status === true || status?.isBookmarked === true
+                );
             } catch (error) {
                 console.error("북마크 상태 확인 실패:", error);
                 setIsBookmarked(false);
@@ -77,13 +79,13 @@ export default function Recipe({
             if (!userId) return false;
 
             if (nextBookmarked === false) {
-                await removeBookmark(recipeId, userId);
+                await removeBookmark(recipeId);
                 setIsBookmarked(false);
                 onBookmarkToggle?.(false);
                 return false;
             }
 
-            await addBookmark(recipeId, userId);
+            await addBookmark(recipeId);
             setIsBookmarked(true);
             onBookmarkToggle?.(true);
             return true;
