@@ -1,0 +1,66 @@
+.bookmarkButton {
+  background: white;
+  color: #ff6b6b;
+  border: 2px solid #ff6b6b;
+  padding: 10px 24px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 140px;
+  height: 44px;
+  position: relative;
+  overflow: hidden;
+}
+
+.bookmarkButton:hover {
+  transform: translateY(-2px);
+  background: #fff0f0;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
+}
+
+.bookmarkButton:active {
+  transform: translateY(0);
+}
+
+.bookmarkButton.active {
+  background: linear-gradient(135deg, #ff6b6b, #ee5253);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 15px rgba(238, 82, 83, 0.3);
+}
+
+.bookmarkButton.active:hover {
+  background: linear-gradient(135deg, #ff7675, #ff6b6b);
+  box-shadow: 0 6px 20px rgba(238, 82, 83, 0.4);
+}
+
+.bookmarkButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.loader {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 107, 107, 0.3);
+  border-top-color: #ff6b6b;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.active .loader {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

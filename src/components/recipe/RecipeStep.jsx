@@ -1,6 +1,6 @@
-import styles from "@/app/recipes/[id]/RecipeDetail.module.css";
+import styles from "@/app/recipes/[id]/Recipe.module.css";
 
-export default function RecipeDetailStep({ number, content, image }) {
+export default function RecipeStep({ number, content, image }) {
   return (
     <div className={styles.stepCard}>
       <div className={styles.stepImageContainer}>

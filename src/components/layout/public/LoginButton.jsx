@@ -52,7 +52,12 @@ export default function LoginButton() {
     };
 
     const handleKakaoLogin = () => {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+        const apiBase = (
+            process.env.NEXT_PUBLIC_API_URL ||
+            process.env.NEXT_PUBLIC_API_BASE_URL ||
+            "/api"
+        ).replace(/\/$/, "");
+
         window.location.href = `${apiBase}/v1/auth/kakao/login`;
     };
 

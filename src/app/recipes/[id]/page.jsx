@@ -1,26 +1,49 @@
+"use client";
 
-import RecipeDetailInfoTable from "@/components/recipe-detail/RecipeDetailInfoTable";
-import RecipeDetailStep from "@/components/recipe-detail/RecipeDetailStep";
-import styles from "./RecipeDetail.module.css";
+import { useEffect, useState } from "react";
+import RecipeInfoTable from "@/components/recipe/RecipeInfoTable";
+import RecipeIngredients from "@/components/recipe/RecipeIngredients";
+import RecipeStep from "@/components/recipe/RecipeStep";
+import CookRecipeButton from "@/components/recipe/CookRecipeButton";
+import BookmarkButton from "@/components/recipe/BookmarkButton";
+import styles from "./Recipe.module.css";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import { getRecipeDetail } from "@/api/recipeApi";
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 
-export default async function RecipeDetailPage({ params }) {
-  let recipeData = null;
+export default function RecipePage() {
+  const params = useParams();
+  const id = params?.id;
+  const [recipeData, setRecipeData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  try {
-    const id = (await params).id || params.id;
-    const response = await getRecipeDetail(id);
-    recipeData = response.data;
-  } catch (error) {
-    console.error("레시피를 불러오는데 실패했습니다:", error);
-  }
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchRecipe = async () => {
+      try {
+        const result = await getRecipeDetail(id);
+        setRecipeData(result);
+      } catch (error) {
+        console.error("레시피를 불러오는데 실패했습니다:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecipe();
+  }, [id]);
 
   // 레시피 데이터 없을 시 404 페이지로 이동
-  if (!recipeData) notFound();
+  if (!loading && !recipeData) notFound();
 
+  // 난이도 별점 렌더링
   const renderStars = (rating) => {
+    if (rating == "초급") rating = 2;
+    else if (rating == "중급") rating = 3;
+    else if (rating == "고급") rating = 4;
+    else if (rating == "아무나") rating = 1;
+    else return (<span>정보 없음</span>);
     return (
       <span className={styles.starRating}>
         {"★".repeat(rating)}{"☆".repeat(5 - rating)}
@@ -28,11 +51,15 @@ export default async function RecipeDetailPage({ params }) {
     );
   };
 
-  const ingredientData = recipeData.recipeIngredients?.map(ing => ({
-    label: ing.rawText.split(' ')[0],
-    value: `${ing.amountText || ''}${ing.unit || ''}`.trim() || ing.rawText
-  })) || [];
+  if (loading) {
+    return (
+      <PrivateLayout>
+        <div className="flex justify-center items-center h-screen">로딩 중...</div>
+      </PrivateLayout>
+    );
+  }
 
+  // 영양 성분 데이터 가공
   const nutritionData = [
     { label: "열량", value: `${recipeData.calories ?? 0} kcal` },
     { label: "단백질", value: `${recipeData.protein ?? 0} g` },
@@ -43,11 +70,14 @@ export default async function RecipeDetailPage({ params }) {
     { label: "콜레스테롤", value: `${recipeData.cholesterol ?? 0} mg` },
   ];
 
+  // 요리 정보 데이터 가공
   const metadata = [
     { label: "조리 시간", value: recipeData.cookTimeText || "정보 없음" },
     { label: "분량", value: recipeData.servingsText || "정보 없음" },
+    { label: "난이도", value: renderStars(recipeData.difficultyLevel) || "정보 없음" },
   ];
 
+  // 업데이트 날짜 가공
   const formattedUpdatedAt = recipeData.updatedAt
     ? recipeData.updatedAt.split('T')[0]
     : "정보 없음";
@@ -55,8 +85,12 @@ export default async function RecipeDetailPage({ params }) {
   return (
     <PrivateLayout>
       <div className={styles.recipeContainer}>
-        <div className="flex justify-between items-end mb-6">
-          <h2 className={styles.recipeSubHeader}>상세 레시피 페이지</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className={styles.recipeSubHeader}>{recipeData.title}</h2>
+          <div className="flex gap-3">
+            <BookmarkButton recipeId={recipeData.recipeId} />
+            <CookRecipeButton recipeId={recipeData.recipeId} recipeIngredients={recipeData.recipeIngredients} />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -70,13 +104,9 @@ export default async function RecipeDetailPage({ params }) {
               />
             </div>
 
-            <RecipeDetailInfoTable
-              title="재료 정보"
-              data={ingredientData}
-              columns={2}
-            />
+            <RecipeIngredients recipeIngredients={recipeData.recipeIngredients} />
 
-            <RecipeDetailInfoTable
+            <RecipeInfoTable
               title="영양 성분"
               data={nutritionData}
               columns={2}
@@ -84,7 +114,7 @@ export default async function RecipeDetailPage({ params }) {
             />
             <span className={styles.updatedAt}>업데이트 날짜: {formattedUpdatedAt}</span>
 
-            <RecipeDetailInfoTable
+            <RecipeInfoTable
               title="요리 정보"
               data={metadata}
               columns={2}
@@ -96,7 +126,7 @@ export default async function RecipeDetailPage({ params }) {
           <div className="lg:col-span-7">
             <div className="space-y-6">
               {recipeData.recipeSteps?.map((step) => (
-                <RecipeDetailStep
+                <RecipeStep
                   key={step.stepNo}
                   number={step.stepNo}
                   content={step.instructionText}

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import PostCard from './components/PostCard';
 import Button from '@/components/ui/Button'; // 💡 페이지네이션 이전/다음 버튼을 위해 추가
 import { getAllPosts } from '@/api/postApi';
+import { fileAssetPublicUrl } from '@/lib/fileAssetUrl';
 
 export default function CommunityPage() {
     const [posts, setPosts] = useState([]);
@@ -33,7 +34,7 @@ export default function CommunityPage() {
 
     const getImageUrl = (storagePath, storedName) => {
         if (!storedName) return placeholderSvg;
-        return `http://43.201.1.45/uploads/community/${storedName}`;
+        return fileAssetPublicUrl(storagePath, storedName);
     };
 
     return (
