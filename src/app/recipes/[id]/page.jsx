@@ -1,25 +1,41 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import RecipeInfoTable from "@/components/recipe/RecipeInfoTable";
+import RecipeIngredients from "@/components/recipe/RecipeIngredients";
 import RecipeStep from "@/components/recipe/RecipeStep";
 import CookRecipeButton from "@/components/recipe/CookRecipeButton";
 import BookmarkButton from "@/components/recipe/BookmarkButton";
 import styles from "./Recipe.module.css";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import { getRecipeDetail } from "@/api/recipeApi";
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 
-export default async function RecipePage({ params }) {
-  let recipeData = null;
+export default function RecipePage() {
+  const params = useParams();
+  const id = params?.id;
+  const [recipeData, setRecipeData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  try {
-    const id = (await params).id || params.id;
-    const response = await getRecipeDetail(id);
-    recipeData = response.data;
-  } catch (error) {
-    console.error("레시피를 불러오는데 실패했습니다:", error);
-  }
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchRecipe = async () => {
+      try {
+        const result = await getRecipeDetail(id);
+        setRecipeData(result);
+      } catch (error) {
+        console.error("레시피를 불러오는데 실패했습니다:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecipe();
+  }, [id]);
 
   // 레시피 데이터 없을 시 404 페이지로 이동
-  if (!recipeData) notFound();
+  if (!loading && !recipeData) notFound();
 
   // 난이도 별점 렌더링
   const renderStars = (rating) => {
@@ -35,11 +51,13 @@ export default async function RecipePage({ params }) {
     );
   };
 
-  // 재료 데이터 가공
-  const ingredientData = recipeData.recipeIngredients?.map(ing => ({
-    label: ing.normalizedNameSnapshot,
-    value: ing.amountText + (ing.unit != null ? ing.unit : "")
-  })) || [];
+  if (loading) {
+    return (
+      <PrivateLayout>
+        <div className="flex justify-center items-center h-screen">로딩 중...</div>
+      </PrivateLayout>
+    );
+  }
 
   // 영양 성분 데이터 가공
   const nutritionData = [
@@ -64,9 +82,6 @@ export default async function RecipePage({ params }) {
     ? recipeData.updatedAt.split('T')[0]
     : "정보 없음";
 
-  // 디버깅 전용
-  //return (<pre>{JSON.stringify(recipeData, null, 2)}</pre>);
-
   return (
     <PrivateLayout>
       <div className={styles.recipeContainer}>
@@ -74,7 +89,7 @@ export default async function RecipePage({ params }) {
           <h2 className={styles.recipeSubHeader}>{recipeData.title}</h2>
           <div className="flex gap-3">
             <BookmarkButton recipeId={recipeData.recipeId} />
-            <CookRecipeButton recipeId={recipeData.recipeId} />
+            <CookRecipeButton recipeId={recipeData.recipeId} recipeIngredients={recipeData.recipeIngredients} />
           </div>
         </div>
 
@@ -89,11 +104,7 @@ export default async function RecipePage({ params }) {
               />
             </div>
 
-            <RecipeInfoTable
-              title="재료 정보"
-              data={ingredientData}
-              columns={2}
-            />
+            <RecipeIngredients recipeIngredients={recipeData.recipeIngredients} />
 
             <RecipeInfoTable
               title="영양 성분"
