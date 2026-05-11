@@ -37,6 +37,14 @@ export function normalizeProfile(payload) {
     emailVerified: firstDefined(profile.emailVerified, null),
     lastLoginAt: firstDefined(profile.lastLoginAt, null),
     createdAt: firstDefined(profile.createdAt, null),
+    heightCm: firstDefined(profile.heightCm, profile.height, ""),
+    weightKg: firstDefined(profile.weightKg, profile.weight, ""),
+    gender: firstDefined(profile.gender, ""),
+    age: firstDefined(profile.age, ""),
+    milkAllergy: Boolean(firstDefined(profile.milkAllergy, profile.hasMilkAllergy, false)),
+    eggAllergy: Boolean(firstDefined(profile.eggAllergy, profile.hasEggAllergy, false)),
+    diet: Boolean(firstDefined(profile.diet, profile.onDiet, false)),
+    lowSodium: Boolean(firstDefined(profile.lowSodium, profile.lowSalt, false)),
   };
 }
 
