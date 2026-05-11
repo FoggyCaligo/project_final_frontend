@@ -16,6 +16,7 @@ import Title from "@/components/ui/Title.jsx";
 import SubTitle from "@/components/ui/SubTitle.jsx";
 import Select from "@/components/ui/Select.jsx";
 import IngredientComponent from "./components/Ingredient.jsx"
+import Loading from "@/components/ui/Loading.jsx";
 import { fileAssetPublicUrl } from "@/lib/fileAssetUrl";
 import { inferCategoryIdFromIngredientName } from "@/lib/ingredientCategoryHeuristic";
 
@@ -177,10 +178,11 @@ export default function FridgePage() {
     const [categories, setCategories] = useState([]);
     const [currentIngredient, setCurrentIngredient] = useState(new Ingredient());
     const [scanner, setScanner] = useState(new ImageScanner());
+    const [isRecognizing, setIsRecognizing] = useState(false);
+    const [isMutating, setIsMutating] = useState(false);
+    const [mutatingText, setMutatingText] = useState("");
     /** 이미지 인식 API 실패 시 사용자 안내 */
     const [visionRecognitionError, setVisionRecognitionError] = useState("");
-
-    const RecipeList = getRecipeList();
 
     const fetchIngredients = useCallback(async () => {
         try {
@@ -239,6 +241,11 @@ export default function FridgePage() {
     }
 
     const handleConfirm = async () => {
+        const isEditMode = modalMode === ModalModes.edit;
+        if (isEditMode) {
+            setMutatingText("식재료 수정하는 중...");
+            setIsMutating(true);
+        }
         try {
             const dto = toApiDto(currentIngredient, visionFileIdRef.current);
             if (modalMode === ModalModes.add) {
@@ -251,27 +258,28 @@ export default function FridgePage() {
             closeModal();
         } catch (err) {
             console.error("식재료 저장 실패:", err);
+        } finally {
+            if (isEditMode) {
+                setIsMutating(false);
+                setMutatingText("");
+            }
         }
     };
 
     const handleClickDelete = async (ingredient) => {
+        setMutatingText("식재료 삭제하는 중...");
+        setIsMutating(true);
         try {
             await fridgeApi.deleteIngredient(ingredient.id);
             await fetchIngredients();
             await fetchSummary();
         } catch (err) {
             console.error("식재료 삭제 실패:", err);
+        } finally {
+            setIsMutating(false);
+            setMutatingText("");
         }
     };
-
-    function getRecipeList() {
-        const url = TestImg.src || TestImg;
-        return ([
-            { name: "레시피 1", time: "30분", difficulty: "쉬움", imageURL: url },
-            { name: "레시피 1", time: "30분", difficulty: "쉬움", imageURL: url },
-            { name: "레시피 1", time: "30분", difficulty: "쉬움", imageURL: url },
-        ]);
-    }
 
     const storageCategories = Object.keys(StorageType).map(typeKey => ({
         type: StorageType[typeKey],
@@ -397,22 +405,10 @@ export default function FridgePage() {
                     </Card>
                 ))}
 
-                {/* 추천 레시피 카드 */}
-                <Card>
-                    <div className="text-lg font-bold mb-6">추천 레시피</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {RecipeList.map((each, idx) => (
-                            <Recipe
-                                key={idx}
-                                name={each.name}
-                                time={each.time}
-                                difficulty={each.difficulty}
-                                imageURL={each.imageURL}
-                            />
-                        ))}
-                    </div>
-                </Card>
-
+                <Loading
+                    isOpen={isRecognizing || isMutating}
+                    text={isRecognizing ? "이미지 인식하는 중.." : mutatingText}
+                ></Loading>
                 <Modal
                     title={modalMode === ModalModes.add ? "재료 추가" : "재료 수정"}
                     isOpen={modalMode !== ModalModes.close}
@@ -525,6 +521,7 @@ export default function FridgePage() {
                                         }
                                         return prev.cloneWith({ file, previewUrl, results: [] });
                                     });
+                                    setIsRecognizing(true);
                                     try {
                                         const res = await fridgeApi.recognizeIngredientImage(file, 3);
                                         const payload = res.data?.data;
@@ -559,6 +556,8 @@ export default function FridgePage() {
                                         setCurrentIngredient((prev) =>
                                             prev.cloneWith({ visionFileId: null })
                                         );
+                                    } finally {
+                                        setIsRecognizing(false);
                                     }
                                     e.target.value = "";
                                 }}
