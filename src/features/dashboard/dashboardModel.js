@@ -3,6 +3,7 @@ import { normalizeIngredient, normalizeRecipe, toArray } from "./normalizers";
 
 const SOON_ITEMS_PREVIEW_LIMIT = 6;
 const SHOPPING_ITEMS_PREVIEW_LIMIT = 3;
+const RECIPE_PREVIEW_LIMIT = 5;
 
 const storageTypeLabels = {
   REFRIGERATED: "냉장",
@@ -272,7 +273,7 @@ export function buildDashboardView({ summary, ingredients, recipes, recommendati
   const normalizedRecipes = toArray(recipes)
     .map(normalizeRecipe)
     .sort((a, b) => getRecipeMatchRate(b) - getRecipeMatchRate(a))
-    .slice(0, 3);
+    .slice(0, RECIPE_PREVIEW_LIMIT);
   const shoppingSummary = buildShoppingSummary(shoppingPrices);
   const allSoonItems = getSoonItems(summary, normalizedIngredients);
   const soonItems = allSoonItems.slice(0, SOON_ITEMS_PREVIEW_LIMIT);

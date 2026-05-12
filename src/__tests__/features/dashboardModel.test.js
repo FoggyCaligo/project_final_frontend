@@ -59,7 +59,7 @@ describe("buildDashboardView", () => {
     expect(view.soonItems).toHaveLength(1);
     expect(view.soonItems[0]).toEqual(expect.objectContaining({ id: 1, name: "milk", quantity: "1L" }));
     expect(view.soonTotalCount).toBe(1);
-    expect(view.recipes.map((recipe) => recipe.title)).toEqual(["fried rice", "salad", "soup"]);
+    expect(view.recipes.map((recipe) => recipe.title)).toEqual(["fried rice", "salad", "soup", "pasta"]);
     expect(view.personalizationSignals).toEqual({
       hasFridgeData: true,
       hasUrgentIngredients: true,
@@ -118,13 +118,16 @@ describe("buildDashboardView", () => {
         { recipeId: 1, title: "low", matchRate: 20 },
         { recipeId: 2, title: "high", matchRate: 100 },
         { recipeId: 3, title: "middle", matchRate: 75 },
+        { recipeId: 4, title: "second", matchRate: 90 },
+        { recipeId: 5, title: "fourth", matchRate: 60 },
+        { recipeId: 6, title: "hidden", matchRate: 10 },
       ],
-      recommendationTotalCount: 3,
+      recommendationTotalCount: 6,
       shoppingPrices: [],
       errors: [],
     });
 
-    expect(view.recipes.map((recipe) => recipe.title)).toEqual(["high", "middle", "low"]);
+    expect(view.recipes.map((recipe) => recipe.title)).toEqual(["high", "second", "middle", "fourth", "low"]);
   });
 
   it("hides recommendation totals when the fridge is empty", () => {
