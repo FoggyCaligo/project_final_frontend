@@ -15,6 +15,7 @@ const NOTICE_MODAL_SESSION_KEY = "today-fridge-dashboard-notice-modal-shown";
 const MODAL_NOTICE_IDS = new Set(["expired", "soon"]);
 
 export default function DashboardHome() {
+  const { user } = useAuth();
   const { dashboard, loading, refresh } = useDashboardData();
   const view = useMemo(() => buildDashboardView(dashboard), [dashboard]);
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
