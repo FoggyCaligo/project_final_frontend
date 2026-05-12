@@ -34,7 +34,7 @@ function fridgeVisionImageUrl(imageStoragePath, imageStoredName) {
         : `/uploads/${clean}`;
 
     if (clean.startsWith("vision/") || clean.startsWith("uploads/vision/")) {
-        return `https://www.todayfridge.today${uploadPath}`;
+        return `https://todayfridge.com${uploadPath}`;
     }
 
     return fileAssetPublicUrl(imageStoragePath, imageStoredName);
