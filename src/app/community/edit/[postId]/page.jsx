@@ -6,71 +6,92 @@ import Button from '@/components/ui/Button';
 import InputText from '@/components/ui/InputText';
 import CustomTag from '@/components/ui/Tag';
 import Section from '@/components/ui/Section';
+import Modal from '@/components/ui/Modal'; 
+import Link from 'next/link'; 
+import { useAuth } from "@/context/AuthContext"; 
+import { loginApi } from "@/api/authApi"; 
 import { getBookmarkedRecipes } from '@/api/bookmarkApi';
 import { uploadImages, getPostDetail, updatePost } from '@/api/postApi';
 
 export default function CommunityEditPage() {
     const { postId } = useParams();
     const router = useRouter();
+    const { login } = useAuth();
 
+    // 로그인 관련 상태 
+    const [isLoginNeeded, setIsLoginNeeded] = useState(false);
+    const [loginId, setLoginId] = useState("");
+    const [password, setPassword] = useState("");
+    const [loginError, setLoginError] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    
+    const [emailVerifiedMsg, setEmailVerifiedMsg] = useState(
+        typeof window !== "undefined" &&
+            new URLSearchParams(window.location.search).get("emailVerified") === "true"
+            ? "이메일 인증이 완료되었습니다. 로그인해주세요."
+            : ""
+    );
+
+    // 게시글 상태들
     const [images, setImages] = useState([]);
     const [isDragActive, setIsDragActive] = useState(false);
     const fileInputRef = useRef(null);
-    
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [recipe, setRecipe] = useState(""); 
     const [bookmarkedRecipes, setBookmarkedRecipes] = useState([]); 
     const [isLoading, setIsLoading] = useState(false);
     
-    // 💡 동적으로 변경될 로그인 유저 ID 상태 관리
+    // 동적으로 변경될 로그인 유저 ID 상태 관리
     const [currentUserId, setCurrentUserId] = useState(null);
     
-    // 1. 컴포넌트 마운트 시 세션스토리지에서 유저 정보 가져오기
+    // 1. 컴포넌트 마운트 시 세션스토리지에서 유저 정보 가져오기 및 권한 체크
     useEffect(() => {
         const authUserStr = sessionStorage.getItem('authUser');
         if (authUserStr) {
             try {
                 const authUser = JSON.parse(authUserStr);
-                
-                // 체크용 콘솔 출력
-                console.log("수정페이지기준 세션에서 로드된 유저 정보 (loginId):", authUser.loginId);
-                console.log("수정페이지기준 세션에서 로드된 유저 정보 (userId):", authUser.userId);
-                
                 setCurrentUserId(authUser.userId);
+                setIsLoginNeeded(false);
             } catch (error) {
                 console.error("세션 데이터 파싱 오류:", error);
+                setIsLoginNeeded(true);
             }
         } else {
-            alert("로그인이 필요한 서비스입니다.");
-            router.push('/login'); 
+            setIsLoginNeeded(true);
         }
-    }, [router]);
+    }, []);
     
-    // 2. 화면 로드 시 기존 게시글 정보와 북마크 목록을 가져옴
+    // 2. 화면 로드 시 게시글 정보 및 작성자 확인 로직 수행
     useEffect(() => {
-        // userId가 아직 없으면 (null 상태) API 호출 대기
         if (!currentUserId) return;
 
         const fetchInitialData = async () => {
             try {
-                // 1. 북마크 목록 로드
+                // 1) 게시글 상세 정보를 먼저 불러와 작성자 여부 확인
+                const postData = await getPostDetail(postId);
+                
+                // 💡 작성자 불일치 시 접근 차단 (본인 글이 아님)
+                if (Number(postData.authorUserId) !== Number(currentUserId)) {
+                    alert("올바르지 않은 접근입니다.");
+                    router.push('/community');
+                    return; // 함수 실행 즉시 종료
+                }
+
+                // 2) 본인임이 확인된 후에만 북마크 목록 로드
                 const bookmarkData = await getBookmarkedRecipes(currentUserId);
                 setBookmarkedRecipes(bookmarkData);
 
-                // 2. 게시글 상세 정보 로드
-                const postData = await getPostDetail(postId);
+                // 3) 상태 업데이트 적용
                 setTitle(postData.title);
                 setContent(postData.content);
                 
-                // 기존 게시글의 레시피 세팅 (만약 없다면 북마크 목록의 첫 번째 레시피를 기본값으로 세팅)
                 if (postData.recipeId) {
                     setRecipe(postData.recipeId.toString());
                 } else if (bookmarkData && bookmarkData.length > 0) {
                     setRecipe(bookmarkData[0].recipeId.toString());
                 }
 
-                // 3. 기존 이미지 미리보기 설정 (isExisting 플래그와 storedName 저장)
                 if (postData.images && postData.images.length > 0) {
                     const loadedImages = postData.images.map((img, idx) => ({
                         id: `existing-${idx}`,
@@ -89,13 +110,44 @@ export default function CommunityEditPage() {
 
         if (postId) fetchInitialData();
 
-        // 클린업: 새로 생성된 ObjectURL 해제
         return () => {
             images.forEach(img => {
                 if (!img.isExisting) URL.revokeObjectURL(img.preview);
             });
         };
-    }, [postId, currentUserId]); // currentUserId가 세팅될 때 동작하도록 의존성 추가
+    }, [postId, currentUserId, router]); 
+
+    // 직접 로그인 처리 함수
+    const handleDirectLogin = async () => {
+        setLoginError("");
+        if (!loginId || !password) {
+            setLoginError("아이디와 비밀번호를 입력해주세요.");
+            return;
+        }
+        try {
+            await loginApi(loginId, password);
+            await login(loginId, "general");
+            
+            const updatedUserStr = sessionStorage.getItem('authUser');
+            if (updatedUserStr) {
+                const updatedUser = JSON.parse(updatedUserStr);
+                setCurrentUserId(updatedUser.userId);
+            }
+            setIsLoginNeeded(false);
+        } catch (err) {
+            setLoginError(err.message || "로그인에 실패했습니다.");
+        }
+    };
+
+    const handleKakaoLogin = () => {
+        const apiBase = (
+            process.env.NEXT_PUBLIC_API_URL ||
+            process.env.NEXT_PUBLIC_API_BASE_URL ||
+            "/api"
+        ).replace(/\/$/, "");
+
+        window.location.href = `${apiBase}/v1/auth/kakao/login`;
+    };
 
     const processFiles = (files) => {
         const validExtensions = ['image/jpeg', 'image/png', 'image/webp'];
@@ -113,19 +165,15 @@ export default function CommunityEditPage() {
 
     const handleUpdate = async () => {
         if (isLoading) return;
-
-        // 💡 로그인 상태 유효성 검사
         if (!currentUserId) {
-            alert("로그인 정보를 확인할 수 없습니다. 다시 로그인 해주세요.");
+            alert("로그인 정보를 확인할 수 없습니다.");
+            setIsLoginNeeded(true);
             return;
         }
-
-        // 유효성 검사 추가 (이미지와 레시피 필수 선택)
         if (images.length === 0) {
             alert("이미지를 하나 이상 등록해주세요.");
             return;
         }
-
         if (!recipe) {
             alert("북마크한 레시피를 선택해주세요.");
             return;
@@ -134,7 +182,6 @@ export default function CommunityEditPage() {
         setIsLoading(true);
 
         try {
-            // 1. 새로 추가된 이미지만 필터링하여 업로드
             const newFiles = images.filter(img => !img.isExisting);
             let uploadedData = null;
 
@@ -153,18 +200,16 @@ export default function CommunityEditPage() {
                 }
             }
 
-            // 2. 유지할 기존 이미지 목록(storedName) 추출
             const retainedImages = images
                 .filter(img => img.isExisting)
                 .map(img => img.storedName);
 
-            // 3. Spring Boot PATCH 요청
             const finalPostData = {
                 title: title,
                 content: content,
                 recipe: recipe,
-                image_files: uploadedData,     // 새 이미지 정보 (없으면 null)
-                retained_images: retainedImages // 유지할 기존 이미지 파일명 목록
+                image_files: uploadedData,     
+                retained_images: retainedImages 
             };
 
             const dbResult = await updatePost(postId, finalPostData);
@@ -181,16 +226,8 @@ export default function CommunityEditPage() {
         }
     };
 
-    const handleDragOver = useCallback((e) => {
-        e.preventDefault();
-        setIsDragActive(true);
-    }, []);
-
-    const handleDragLeave = useCallback((e) => {
-        e.preventDefault();
-        setIsDragActive(false);
-    }, []);
-
+    const handleDragOver = useCallback((e) => { e.preventDefault(); setIsDragActive(true); }, []);
+    const handleDragLeave = useCallback((e) => { e.preventDefault(); setIsDragActive(false); }, []);
     const handleDrop = useCallback((e) => {
         e.preventDefault();
         setIsDragActive(false);
@@ -212,12 +249,96 @@ export default function CommunityEditPage() {
         });
     };
 
-    const removeAllImages = () => {
-        images.forEach(img => !img.isExisting && URL.revokeObjectURL(img.preview));
-        setImages([]);
-    };
-
     const placeholderSvg = "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%271280%27%20height%3D%27800%27%20viewBox%3D%270%200%201280%20800%27%3E%0A%20%20%20%20%3Crect%20width%3D%27100%25%27%20height%3D%27100%25%27%20fill%3D%27%23ECE7DD%27/%3E%0A%20%20%20%20%3Ctext%20x%3D%27640%27%20y%3D%27400%27%20text-anchor%3D%27middle%27%20font-family%3D%27sans-serif%27%20font-size%3D%2732%27%20fill%3D%27%237A847D%27%3E%EC%9D%B4%EB%AF%B8%EC%A7%80%20%EB%AF%B8%EB%A6%AC%EB%B3%B4%EA%B8%B0%3C/text%3E%0A%3C/svg%3E";
+
+    // 권한이 없을 때 띄우는 모달
+    if (isLoginNeeded) {
+        return (
+            <Modal
+                isOpen={true}
+                title="로그인"
+                onClose={() => router.push('/community')} // 💡 닫기 버튼 누르면 목록으로 이동
+                showFooter={false}
+                variant="login"
+            >
+                <div className="flex flex-col gap-4">
+                    {emailVerifiedMsg && (
+                        <p className="rounded-lg bg-green-50 px-4 py-3 text-xs text-green-700">
+                            {emailVerifiedMsg}
+                        </p>
+                    )}
+                    <input
+                        id="loginId"
+                        name="loginId"
+                        type="text"
+                        placeholder="아이디"
+                        autoComplete="username"
+                        value={loginId}
+                        onChange={(e) => setLoginId(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleDirectLogin()}
+                        className="w-full rounded-lg border border-[var(--border)] px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                    />
+                    <div className="relative">
+                        <input
+                            id="password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="비밀번호"
+                            autoComplete="current-password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleDirectLogin()}
+                            className="w-full rounded-lg border border-[var(--border)] px-4 py-3 pr-11 text-sm outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-sub)] hover:text-[var(--text-main)]"
+                            tabIndex={-1}
+                            aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+                        >
+                            {showPassword ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m0 0L21 21" />
+                                </svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            )}
+                        </button>
+                    </div>
+                    {loginError && <p className="text-xs text-red-500">{loginError}</p>}
+                    <Button variant="primary" handleClick={handleDirectLogin} is_full>
+                        로그인
+                    </Button>
+                    <div className="flex items-center gap-3 text-[var(--text-sub)]">
+                        <hr className="flex-1 border-[var(--border)]" />
+                        <span className="text-xs">또는</span>
+                        <hr className="flex-1 border-[var(--border)]" />
+                    </div>
+                    {/* 카카오 로그인 */}
+                    <button
+                        type="button"
+                        onClick={handleKakaoLogin}
+                        className="flex w-full items-center justify-center gap-2 rounded-full bg-[#FEE500] py-3 text-sm font-semibold text-[#3C1E1E] transition hover:opacity-90"
+                    >
+                        <span>🍫</span> 카카오로 로그인
+                    </button>
+                </div>
+                <p className="mt-4 text-center text-xs text-[var(--text-sub)]">
+                    계정이 없으신가요?{" "}
+                    <Link
+                        href="/signup"
+                        className="font-semibold text-[var(--primary)] underline"
+                    >
+                        회원가입
+                    </Link>
+                </p>
+            </Modal>
+        );
+    }
 
     return (
         <main className="w-full">
@@ -237,7 +358,6 @@ export default function CommunityEditPage() {
                                 value={recipe}
                                 onChange={(e) => setRecipe(e.target.value)}
                             >
-                                {/* 💡 수정된 부분: item.recipeName -> item.title */}
                                 {bookmarkedRecipes.length > 0 ? (
                                     bookmarkedRecipes.map((item) => (
                                         <option key={item.recipeId} value={item.recipeId}>
@@ -334,6 +454,10 @@ export default function CommunityEditPage() {
                                 <img className="w-full h-full object-cover" src={placeholderSvg} alt="비어 있음" />
                             </div>
                         )}
+                        <div className="flex flex-wrap gap-2 mt-4">
+                            <CustomTag variant="secondary">기존 이미지 유지 가능</CustomTag>
+                            <CustomTag color="success">PATCH 메소드 대응</CustomTag>
+                        </div>
                     </Card>
                 </div>
             </Section>
