@@ -24,6 +24,22 @@ import Loading from "@/components/ui/Loading.jsx";
 import { fileAssetPublicUrl } from "@/lib/fileAssetUrl";
 import { inferCategoryIdFromIngredientName } from "@/lib/ingredientCategoryHeuristic";
 
+function fridgeVisionImageUrl(imageStoragePath, imageStoredName) {
+    const path = imageStoragePath || imageStoredName;
+    if (!path) return null;
+
+    const clean = String(path).replace(/^\/+/, "");
+    const uploadPath = clean.startsWith("uploads/")
+        ? `/${clean}`
+        : `/uploads/${clean}`;
+
+    if (clean.startsWith("vision/") || clean.startsWith("uploads/vision/")) {
+        return `https://www.todayfridge.today${uploadPath}`;
+    }
+
+    return fileAssetPublicUrl(imageStoragePath, imageStoredName);
+}
+
 // 모달 모드: 0: 닫힘, 1: 수정, 2: 추가
 const ModalModes = { close: 0, edit: 1, add: 2 };
 
@@ -517,7 +533,7 @@ export default function FridgePage() {
                             <IngredientComponent
                                 key={each.id ?? idx}
                                 ingredientId={each.id}
-                                imageUrl={fileAssetPublicUrl(each.imageStoragePath, each.imageStoredName)}
+                                imageUrl={fridgeVisionImageUrl(each.imageStoragePath, each.imageStoredName)}
                                 name={each.name}
                                 description="식재료 메모"
                                 expires={each.expire}
@@ -553,7 +569,7 @@ export default function FridgePage() {
                                     <IngredientComponent
                                         key={each.id ?? idx}
                                         ingredientId={each.id}
-                                        imageUrl={fileAssetPublicUrl(each.imageStoragePath, each.imageStoredName)}
+                                        imageUrl={fridgeVisionImageUrl(each.imageStoragePath, each.imageStoredName)}
                                         name={each.name}
                                         description="식재료 메모"
                                         expires={each.expire}
@@ -599,7 +615,7 @@ export default function FridgePage() {
                                 >
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
-                                        src={fileAssetPublicUrl(
+                                        src={fridgeVisionImageUrl(
                                             currentIngredient.imageStoragePath,
                                             currentIngredient.imageStoredName
                                         )}
