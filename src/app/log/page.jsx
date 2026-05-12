@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import styles from './page.module.css';
 import PrivateLayout from '@/components/layout/private/PrivateLayout';
 import { mealApi } from '@/api/mealApi';
+import { healthReportApi } from '@/api/healthReportApi';
 import { useRouter } from 'next/navigation';
 
 export default function MealPage() {
@@ -26,15 +27,14 @@ export default function MealPage() {
     }, [activeTab]);
 
     const handleRecommendation = async () => {
-        if (!canRequestRecommendation) return;
+        if (!canRequestRecommendation) {
+            router.push('/health-report');
+            return;
+        }
         
         try {
-            const data = await mealApi.getMealRecommendation();
-            
-            // Save to memory (sessionStorage) rather than relying on DB for the next page
-            if (data) {
-                sessionStorage.setItem('latestHealthReport', JSON.stringify(data));
-            }
+            // Using the new healthReportApi to generate the AI report
+            const data = await healthReportApi.generateHealthReport();
             
             const today = new Date().toDateString();
             localStorage.setItem('lastMealRecommendationDate', today);
@@ -43,7 +43,7 @@ export default function MealPage() {
             router.push('/health-report');
         } catch (error) {
             console.error("Failed to get recommendation:", error);
-            alert('추천을 가져오는데 실패했습니다.');
+            alert('건강 레포트를 생성하는데 실패했습니다.');
         }
     };
 
@@ -129,13 +129,12 @@ export default function MealPage() {
                         <div className="flex flex-col items-end">
                             <button 
                                 onClick={handleRecommendation}
-                                disabled={!canRequestRecommendation}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${canRequestRecommendation ? 'bg-primary text-white hover:bg-primary-hover shadow-md' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
-                                style={canRequestRecommendation ? { backgroundColor: 'var(--color-primary)' } : {}}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all bg-primary text-white hover:bg-primary-hover shadow-md`}
+                                style={{ backgroundColor: 'var(--color-primary)' }}
                             >
-                                AI 식단 추천 받기
+                                {canRequestRecommendation ? 'AI 식단 추천 받기' : '오늘의 추천 결과 보기'}
                             </button>
-                            <p className="text-[10px] text-gray-400 mt-1">하루에 한 번만 요청 가능합니다.</p>
+                            <p className="text-[10px] text-gray-400 mt-1">새로운 분석은 하루에 한 번만 진행됩니다.</p>
                         </div>
                         <div className="flex space-x-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm h-fit">
                             {['daily', 'weekly', 'monthly'].map(tab => (
