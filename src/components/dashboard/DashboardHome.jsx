@@ -9,6 +9,7 @@ import DashboardFridgeCard from "./DashboardFridgeCard";
 import DashboardInsightCard from "./DashboardInsightCard";
 import DashboardRecipeCard from "./DashboardRecipeCard";
 import DashboardNoticeModal from "./DashboardNoticeModal";
+import styles from "./Dashboard.module.css";
 
 const NOTICE_MODAL_SESSION_KEY = "today-fridge-dashboard-notice-modal-shown";
 const MODAL_NOTICE_IDS = new Set(["expired", "soon"]);
@@ -48,8 +49,8 @@ export default function DashboardHome() {
         <DashboardSummaryCards items={view.summaryCards} loading={loading} />
 
         <section className="section-block">
-          <div className="dashboard-main-grid">
-            <div className="dashboard-stack">
+          <div className={styles.mainGrid}>
+            <div className={styles.stack}>
               <DashboardInsightCard
                 insights={view.insights}
                 loading={loading}
@@ -60,7 +61,7 @@ export default function DashboardHome() {
                 totalCount={view.soonTotalCount}
               />
             </div>
-            <div className="dashboard-stack">
+            <div className={styles.stack}>
               <DashboardRecipeCard recipes={view.recipes} loading={loading} />
             </div>
           </div>

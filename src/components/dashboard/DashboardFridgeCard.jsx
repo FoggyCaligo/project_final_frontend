@@ -1,4 +1,5 @@
 import Link from "next/link";
+import styles from "./Dashboard.module.css";
 
 export default function DashboardFridgeCard({ items, loading, totalCount = items.length }) {
     const hasHiddenItems = !loading && totalCount > items.length;
@@ -6,7 +7,7 @@ export default function DashboardFridgeCard({ items, loading, totalCount = items
     return (
         <article className="card-box">
             <div className="card-body">
-                <div className="section-head mb-0">
+                <div className={`section-head mb-0 ${styles.sectionHead}`}>
                     <div>
                         <div className="flex flex-wrap items-center gap-2">
                             <h2 className="card-title">유통기한 임박 재료</h2>

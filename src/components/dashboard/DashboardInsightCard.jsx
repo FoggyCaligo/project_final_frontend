@@ -1,20 +1,22 @@
+import styles from "./Dashboard.module.css";
+
 const toneClassMap = {
-  danger: "dashboard-bar-danger",
-  neutral: "dashboard-bar-neutral",
-  success: "dashboard-bar-success",
-  warning: "dashboard-bar-warning",
+  danger: styles.barDanger,
+  neutral: styles.barNeutral,
+  success: styles.barSuccess,
+  warning: styles.barWarning,
 };
 
 function MetricBar({ item }) {
   return (
-    <div className="dashboard-metric-row">
+    <div className={styles.metricRow}>
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-bold text-[var(--color-text)]">{item.label}</span>
         <span className="text-sm font-extrabold text-[var(--color-text-sub)]">{item.value}개</span>
       </div>
-      <div className="dashboard-bar-track">
+      <div className={styles.barTrack}>
         <div
-          className={`dashboard-bar-fill ${toneClassMap[item.tone] ?? toneClassMap.neutral}`}
+          className={`${styles.barFill} ${toneClassMap[item.tone] ?? toneClassMap.neutral}`}
           style={{ width: `${item.percent}%` }}
         />
       </div>
@@ -30,7 +32,7 @@ export default function DashboardInsightCard({ insights, loading }) {
   return (
     <article className="card-box">
       <div className="card-body">
-        <div className="section-head mb-0">
+        <div className={`section-head mb-0 ${styles.sectionHead}`}>
           <div>
             <h2 className="card-title">냉장고 상태 요약</h2>
             <p className="card-desc">
