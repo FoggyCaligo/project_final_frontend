@@ -30,16 +30,60 @@ function buildTargetUrl(origin, pathSegments = [], searchParams = "") {
   return `${origin}/api/v1/${safePath}${searchParams}`;
 }
 
+function getSetCookieHeaders(headers) {
+  if (typeof headers.getSetCookie === "function") {
+    return headers.getSetCookie();
+  }
+
+  const combinedCookie = headers.get("set-cookie");
+  if (!combinedCookie) return [];
+
+  return combinedCookie
+    .split(/,(?=\s*[^;,=]+?=)/)
+    .map((cookie) => cookie.trim())
+    .filter(Boolean);
+}
+
 function copyResponseHeaders(headers) {
   const nextHeaders = new Headers();
+  const setCookieHeaders = getSetCookieHeaders(headers);
 
   headers.forEach((value, key) => {
     const lower = key.toLowerCase();
-    if (lower === "content-encoding" || lower === "transfer-encoding") {
+    if (
+      lower === "content-encoding" ||
+      lower === "set-cookie" ||
+      lower === "transfer-encoding"
+    ) {
       return;
     }
     nextHeaders.set(key, value);
   });
+
+  setCookieHeaders.forEach((cookie) => {
+    nextHeaders.append("set-cookie", cookie);
+  });
+
+  return nextHeaders;
+}
+
+function buildForwardHeaders(headers) {
+  const nextHeaders = new Headers(headers);
+  const blockedHeaders = [
+    "host",
+    "connection",
+    "content-length",
+    "expect",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailer",
+    "transfer-encoding",
+    "upgrade",
+  ];
+
+  blockedHeaders.forEach((header) => nextHeaders.delete(header));
 
   return nextHeaders;
 }
@@ -50,9 +94,7 @@ async function proxyToBackend(request, context) {
   const origins = getCandidateOrigins();
 
   const method = request.method;
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.delete("host");
-  requestHeaders.delete("content-length");
+  const requestHeaders = buildForwardHeaders(request.headers);
 
   const bodyBuffer = method === "GET" || method === "HEAD"
     ? null

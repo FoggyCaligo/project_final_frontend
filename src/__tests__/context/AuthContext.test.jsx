@@ -1,6 +1,21 @@
-import { render, screen, act, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+
+const DASHBOARD_NOTICE_MODAL_SESSION_KEY = 'today-fridge-dashboard-notice-modal-shown';
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/',
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+  }),
+}));
+
+vi.mock('@/api/authApi', () => ({
+  getMeApi: vi.fn().mockResolvedValue({ data: { data: {} } }),
+}));
 
 // AuthContext를 소비하는 테스트용 컴포넌트
 function TestConsumer() {
@@ -58,7 +73,12 @@ describe('AuthContext', () => {
     await user.click(screen.getByText('login-general'));
 
     const stored = JSON.parse(sessionStorage.getItem('authUser'));
-    expect(stored).toEqual({ loginId: 'testuser1', loginType: 'general' });
+    expect(stored).toEqual({
+      loginId: 'testuser1',
+      loginType: 'general',
+      nickname: 'testuser1',
+      userId: null,
+    });
   });
 
   test('login() 호출 시 kakao 타입으로도 저장된다', async () => {
@@ -70,6 +90,16 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('loginType')).toHaveTextContent('kakao');
     const stored = JSON.parse(sessionStorage.getItem('authUser'));
     expect(stored.loginType).toBe('kakao');
+  });
+
+  test('login() clears dashboard notice modal session marker', async () => {
+    const user = userEvent.setup();
+    sessionStorage.setItem(DASHBOARD_NOTICE_MODAL_SESSION_KEY, 'true');
+    setup();
+
+    await user.click(screen.getByText('login-general'));
+
+    expect(sessionStorage.getItem(DASHBOARD_NOTICE_MODAL_SESSION_KEY)).toBeNull();
   });
 
   // ===== logout =====
@@ -92,6 +122,17 @@ describe('AuthContext', () => {
     await user.click(screen.getByText('logout'));
 
     expect(sessionStorage.getItem('authUser')).toBeNull();
+  });
+
+  test('logout() clears dashboard notice modal session marker', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByText('login-general'));
+    sessionStorage.setItem(DASHBOARD_NOTICE_MODAL_SESSION_KEY, 'true');
+    await user.click(screen.getByText('logout'));
+
+    expect(sessionStorage.getItem(DASHBOARD_NOTICE_MODAL_SESSION_KEY)).toBeNull();
   });
 
   // ===== 새로고침 복원 =====
