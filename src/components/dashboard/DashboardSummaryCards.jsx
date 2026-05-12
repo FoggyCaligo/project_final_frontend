@@ -1,3 +1,5 @@
+import styles from "./Dashboard.module.css";
+
 const toneClassMap = {
     success: "badge-success",
     warning: "badge-warning",
@@ -7,7 +9,7 @@ const toneClassMap = {
 export default function DashboardSummaryCards({ items, loading }) {
     return (
         <section className="section-block">
-            <div className="section-head">
+            <div className={`section-head ${styles.sectionHead}`}>
                 <div>
                     <h2 className="section-title">홈 대시보드 요약</h2>
                     <p className="section-desc">

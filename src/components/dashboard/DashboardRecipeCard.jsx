@@ -1,11 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
+import styles from "./Dashboard.module.css";
 
 export default function DashboardRecipeCard({ recipes, loading }) {
   return (
-    <article className="dashboard-recipe-card card-box">
+    <article className={`${styles.recipeCard} card-box`}>
       <div className="card-body">
-        <div className="section-head mb-0">
+        <div className={`section-head mb-0 ${styles.sectionHead}`}>
           <div className="min-w-0">
             <h2 className="card-title">맞춤 추천 레시피</h2>
             <p className="card-desc">
@@ -33,11 +34,11 @@ export default function DashboardRecipeCard({ recipes, loading }) {
           {!loading &&
             recipes.map((recipe) => (
               <Link
-                className="dashboard-recipe-item card-box transition hover:-translate-y-0.5"
+                className={`${styles.recipeItem} card-box transition hover:-translate-y-0.5`}
                 href={`/recipes/${recipe.id}`}
                 key={recipe.id}
               >
-                <div className="dashboard-recipe-thumb">
+                <div className={styles.recipeThumb}>
                   <img
                     className="image-cover"
                     src={recipe.thumbnailUrl || "/next.svg"}
@@ -45,7 +46,7 @@ export default function DashboardRecipeCard({ recipes, loading }) {
                   />
                 </div>
 
-                <div className="dashboard-recipe-content">
+                <div className={styles.recipeContent}>
                   <div className="flex flex-wrap gap-2">
                     {typeof recipe.matchRate === "number" && (
                       <span className="badge badge-success">일치율 {recipe.matchRate}%</span>
