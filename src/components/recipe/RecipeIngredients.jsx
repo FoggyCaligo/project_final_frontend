@@ -37,24 +37,7 @@ function ShoppingLinks({ ingredientName }) {
         // Fallback links if API returns nothing
         const encodedName = encodeURIComponent(ingredientName.trim());
         return (
-            <div className="flex gap-1.5 flex-wrap items-center">
-                <a
-                    href={`https://search.shopping.naver.com/search/all?query=${encodedName}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs px-2 py-0.5 rounded-md text-white bg-[#03C75A] transition-opacity hover:opacity-80"
-                >
-                    네이버
-                </a>
-                <a
-                    href={`https://search.11st.co.kr/Search.tmall?kwd=${encodedName}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs px-2 py-0.5 rounded-md text-white bg-[#E0001B] transition-opacity hover:opacity-80"
-                >
-                    11번가
-                </a>
-            </div>
+           <></>
         );
     }
 
