@@ -301,24 +301,30 @@ export default function IngredientsPrice() {
     }
   }, []);
 
-  // 냉장고 버튼: 로그인된 사용자의 실제 냉장고 재료 조회
+  // 냉장고 식재료 기반 최저가 조회 (진입 시 자동 호출, 비어있으면 예시로 fallback)
   const fetchFridgePrices = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const res = await shoppingApi.getFridgePrices();
       const dataPayload = res.data?.data || res.data;
       const list = Array.isArray(dataPayload) ? dataPayload : [];
-      if (list.length > 0) setPriceData(list);
+      if (list.length > 0) {
+        setPriceData(list);
+        setLoading(false);
+      } else {
+        setLoading(false);
+        fetchDefaultPrices();
+      }
     } catch (err) {
       console.error("냉장고 가격 조회 실패:", err?.message);
-    } finally {
       setLoading(false);
+      fetchDefaultPrices();
     }
-  }, []);
+  }, [fetchDefaultPrices]);
 
   useEffect(() => {
-    fetchDefaultPrices();
-  }, [fetchDefaultPrices]);
+    fetchFridgePrices();
+  }, [fetchFridgePrices]);
 
   const handleSearch = useCallback(async () => {
     const keyword = search.trim();
