@@ -5,12 +5,6 @@ const toneClassMap = {
   warning: "dashboard-bar-warning",
 };
 
-const tipBadgeMap = {
-  danger: "badge-danger",
-  success: "badge-success",
-  warning: "badge-warning",
-};
-
 function MetricBar({ item }) {
   return (
     <div className="dashboard-metric-row">
@@ -28,7 +22,7 @@ function MetricBar({ item }) {
   );
 }
 
-export default function DashboardInsightCard({ insights, loading, displayName = "회원" }) {
+export default function DashboardInsightCard({ insights, loading }) {
   const overviewBars = insights?.overviewBars ?? [];
   const storageBreakdown = insights?.storageBreakdown ?? [];
   const tip = insights?.tip ?? null;
@@ -38,14 +32,11 @@ export default function DashboardInsightCard({ insights, loading, displayName = 
       <div className="card-body">
         <div className="section-head mb-0">
           <div>
-            <h2 className="card-title">{displayName}님 개인화 분석</h2>
+            <h2 className="card-title">냉장고 상태 요약</h2>
             <p className="card-desc">
-              냉장고, 추천, 쇼핑 데이터를 조합해 오늘의 우선순위를 보여줍니다.
+              냉장고 재료와 추천 결과를 기준으로 먼저 확인할 항목을 정리합니다.
             </p>
           </div>
-          <span className={`badge ${tipBadgeMap[tip?.tone] ?? ""}`}>
-            {loading ? "분석 중" : "자동 분석"}
-          </span>
         </div>
 
         {tip && (

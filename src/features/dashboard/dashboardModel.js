@@ -189,28 +189,68 @@ function buildNotices({
   shoppingSummary,
 }) {
   const notices = [
+    ...(expiredCount > 0
+      ? [{
+          id: "expired",
+          tone: "danger",
+          label: "기한 만료",
+          title: `만료 재료 ${expiredCount}개 확인이 필요합니다`,
+          message: "기한이 지난 재료는 냉장고에서 먼저 확인한 뒤 삭제하거나 사용 여부를 정리해주세요.",
+          href: "/fridge",
+          actionLabel: "냉장고 보기",
+        }]
+      : []),
+    ...(soonCount > 0
+      ? [{
+          id: "soon",
+          tone: "warning",
+          label: "임박",
+          title: `유통기한 임박 재료 ${soonCount}개가 있습니다`,
+          message: "가까운 날짜의 재료부터 먼저 사용하면 버리는 재료를 줄일 수 있어요.",
+          href: "/fridge",
+          actionLabel: "냉장고 보기",
+        }]
+      : []),
     ...errors.map((name) => ({
       id: `error-${name}`,
       tone: "warning",
-      message: `${name} 데이터를 불러오지 못했습니다. 백엔드 실행 상태를 확인해주세요.`,
+      label: "연결 확인",
+      title: `${name} 데이터를 불러오지 못했습니다`,
+      message: "백엔드 실행 상태나 로그인 상태를 확인한 뒤 대시보드를 새로고침해주세요.",
     })),
-    ...(soonCount > 0
-      ? [{ id: "soon", tone: "warning", message: `유통기한이 임박한 재료가 ${soonCount}개 있습니다.` }]
-      : []),
-    ...(expiredCount > 0
-      ? [{ id: "expired", tone: "danger", message: `기한이 지난 재료가 ${expiredCount}개 있습니다.` }]
-      : []),
     ...(normalizedRecipes.length > 0
-      ? [{ id: "recommend", tone: "success", message: `보유 재료 기반 추천 레시피 ${recipeCount}개를 불러왔습니다.` }]
+      ? [{
+          id: "recommend",
+          tone: "success",
+          label: "추천",
+          title: `추천 후보 레시피 ${recipeCount}개를 확인했습니다`,
+          message: "일치율이 높은 메뉴부터 확인하고 부족한 재료는 가격비교로 이어서 볼 수 있어요.",
+          href: "/recommendations",
+          actionLabel: "추천 보기",
+        }]
       : []),
     ...(shoppingSummary.totalCount > 0
-      ? [{ id: "shopping", tone: "success", message: `냉장고 식재료 최저가 ${shoppingSummary.totalCount}개를 불러왔습니다.` }]
+      ? [{
+          id: "shopping",
+          tone: "success",
+          label: "가격 비교",
+          title: `가격 비교 데이터 ${shoppingSummary.totalCount}개가 준비됐습니다`,
+          message: "부족한 재료나 다시 구매할 재료가 있으면 최저가를 확인해보세요.",
+          href: "/ingredients-price",
+          actionLabel: "가격 비교 보기",
+        }]
       : []),
   ];
 
   return notices.length > 0
     ? notices
-    : [{ id: "empty", tone: "info", message: "아직 표시할 알림이 없습니다." }];
+    : [{
+        id: "empty",
+        tone: "info",
+        label: "안내",
+        title: "새 알림이 없습니다",
+        message: "냉장고 재료를 추가하면 임박 재료, 추천 레시피, 가격 비교 알림을 이곳에서 확인할 수 있어요.",
+      }];
 }
 
 function buildPersonalizationSignals({ normalizedIngredients, soonCount, expiredCount, normalizedRecipes, shoppingSummary }) {
@@ -222,9 +262,17 @@ function buildPersonalizationSignals({ normalizedIngredients, soonCount, expired
   };
 }
 
+function getRecipeMatchRate(recipe) {
+  const matchRate = Number(recipe.matchRate);
+  return Number.isFinite(matchRate) ? matchRate : -1;
+}
+
 export function buildDashboardView({ summary, ingredients, recipes, recommendationTotalCount, shoppingPrices = [], errors }) {
   const normalizedIngredients = toArray(ingredients).map(normalizeIngredient);
-  const normalizedRecipes = toArray(recipes).map(normalizeRecipe).slice(0, 3);
+  const normalizedRecipes = toArray(recipes)
+    .map(normalizeRecipe)
+    .sort((a, b) => getRecipeMatchRate(b) - getRecipeMatchRate(a))
+    .slice(0, 3);
   const shoppingSummary = buildShoppingSummary(shoppingPrices);
   const allSoonItems = getSoonItems(summary, normalizedIngredients);
   const soonItems = allSoonItems.slice(0, SOON_ITEMS_PREVIEW_LIMIT);
