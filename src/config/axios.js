@@ -1,8 +1,24 @@
 import axios from "axios";
 
+const rawApiBaseUrl = (
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  "/api"
+).replace(/\/$/, "");
+
+const isLocalhostUrl = /https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(rawApiBaseUrl);
+
+// In development, call backend directly (e.g. localhost:8080) when provided.
+// In production, keep same-origin '/api' fallback for safety.
+const API_BASE_URL =
+  process.env.NODE_ENV === "development"
+    ? rawApiBaseUrl
+    : isLocalhostUrl
+      ? "/api"
+      : rawApiBaseUrl;
+
 const api = axios.create({
-  // 중요: 절대주소 금지. Next.js rewrite를 타도록 상대경로 사용.
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
+  baseURL: API_BASE_URL,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",

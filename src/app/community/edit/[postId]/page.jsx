@@ -334,10 +334,6 @@ export default function CommunityEditPage() {
                                 <img className="w-full h-full object-cover" src={placeholderSvg} alt="비어 있음" />
                             </div>
                         )}
-                        <div className="flex flex-wrap gap-2 mt-4">
-                            <CustomTag variant="secondary">기존 이미지 유지 가능</CustomTag>
-                            <CustomTag color="success">PATCH 메소드 대응</CustomTag>
-                        </div>
                     </Card>
                 </div>
             </Section>
