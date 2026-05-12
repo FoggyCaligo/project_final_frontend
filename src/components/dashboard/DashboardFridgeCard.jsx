@@ -20,8 +20,8 @@ export default function DashboardFridgeCard({ items, loading, totalCount = items
                                 : "냉장고 DB에서 먼저 확인할 재료를 가져옵니다."}
                         </p>
                     </div>
-                    <Link className="btn btn-outline" href="/fridge">
-                        냉장고 관리
+                    <Link className="btn btn-secondary shrink-0 whitespace-nowrap" href="/fridge">
+                        관리하기
                     </Link>
                 </div>
 

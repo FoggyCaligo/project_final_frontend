@@ -3,7 +3,7 @@ import { getRecommendations } from "@/api/recommendApi";
 import { shoppingApi } from "@/api/shoppingApi";
 import { initialDashboardData } from "./constants";
 
-const DASHBOARD_RECOMMENDATION_PAGE_SIZE = 3;
+const DASHBOARD_RECOMMENDATION_PAGE_SIZE = 5;
 
 const getDashboardPayload = (response, fallback) => response?.data?.data ?? fallback;
 
