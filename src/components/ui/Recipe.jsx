@@ -4,9 +4,12 @@ import BookMarkButton from "./BookMarkButton";
 import CustomTag from "./Tag";
 import { Tooltip } from "antd";
 import { addBookmark, removeBookmark, checkBookmarkStatus } from "@/api/bookmarkApi";
-import { getSubstitutionSuggestions } from "@/api/substitutionApi";
 import Modal from "./Modal";
 import { useAuth } from "@/context/AuthContext";
+import {
+    getSubstitutionSuggestions,
+    getSubstitutePrices
+} from "@/api/substitutionApi";
 
 const conditionTagMap = {
     DIABETES_LOW_SUGAR: { label: "당뇨 주의", variant: "accent" },
@@ -110,7 +113,31 @@ export default function Recipe({
                 ownedIngredients
             );
 
-            setSubstitutionData(data);
+            const targetIngredients = data?.results
+                ?.filter(item => item.decisionType === "REQUIRED")
+                ?.map(item => item.missingIngredient)
+                ?.filter(Boolean) || [];
+
+            const prices = targetIngredients.length > 0
+                ? await getSubstitutePrices(targetIngredients)
+                : [];
+            console.log("가격 정보:", prices);
+
+            const mergedResults = data?.results?.map(item => {
+                const priceInfo = prices.find(
+                    price => price.ingredientName === item.missingIngredient
+                );
+
+                return {
+                    ...item,
+                    priceInfo: priceInfo || null,
+                };
+            }) || [];
+
+            setSubstitutionData({
+                ...data,
+                results: mergedResults,
+            });
             setIsSubstitutionOpen(true);
         } catch (error) {
             console.error("대체재 추천 조회 실패:", error);
@@ -309,6 +336,22 @@ export default function Recipe({
                                                     </span>
                                                 </div>
                                             )}
+
+                                            {item.priceInfo?.items?.length > 0 ? (
+                                                <a
+                                                    href={item.priceInfo.items[0].link}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="mt-1 inline-block text-blue-600 underline"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    상품 보기
+                                                </a>
+                                            ) : item.decisionType === "REQUIRED" ? (
+                                                <div className="mt-2 text-xs text-gray-400">
+                                                    쇼핑 상품을 찾지 못했어요.
+                                                </div>
+                                            ) : null}
 
                                             <div className="mt-2 text-xs leading-relaxed text-gray-500">
                                                 {item.reason}
