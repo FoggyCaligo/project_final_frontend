@@ -1,0 +1,101 @@
+.mainGrid {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.95fr) minmax(420px, 1.05fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.recipeCard {
+  container-type: inline-size;
+}
+
+.recipeItem {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.recipeThumb {
+  min-height: 132px;
+  overflow: hidden;
+  background: var(--color-thumb-bg);
+}
+
+.recipeContent {
+  min-width: 0;
+  padding: 16px;
+}
+
+.metricRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.barTrack {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-bg-soft);
+}
+
+.barFill {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.barNeutral {
+  background: var(--color-text-sub);
+}
+
+.barWarning {
+  background: var(--color-accent);
+}
+
+.barDanger {
+  background: var(--color-danger);
+}
+
+.barSuccess {
+  background: var(--color-primary);
+}
+
+@container (max-width: 520px) {
+  .recipeItem {
+    grid-template-columns: 1fr;
+  }
+
+  .recipeThumb {
+    aspect-ratio: 16 / 10;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  .mainGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .sectionHead {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .recipeItem {
+    grid-template-columns: 1fr;
+  }
+
+  .recipeThumb {
+    aspect-ratio: 16 / 10;
+    min-height: 0;
+  }
+}

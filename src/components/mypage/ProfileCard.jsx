@@ -14,11 +14,24 @@ function statusLabel(status) {
   return status || "상태 확인 필요";
 }
 
+function emailVerifiedBadge(emailVerified) {
+  if (emailVerified === true) {
+    return { className: "badge-success", label: "이메일 인증 완료" };
+  }
+
+  if (emailVerified === false) {
+    return { className: "badge-warning", label: "이메일 인증 확인 필요" };
+  }
+
+  return { className: "", label: "이메일 인증 정보 없음" };
+}
+
 export default function ProfileCard({ profile, loading, onRefresh }) {
   const safeProfile = profile ?? {};
   const nickname = loading ? "불러오는 중" : safeProfile.nickname;
   const loginId = loading ? "-" : safeProfile.loginId;
   const hasProfileImage = Boolean(safeProfile.profileImageUrl);
+  const emailBadge = emailVerifiedBadge(safeProfile.emailVerified);
 
   return (
     <article className="card-box">
@@ -55,15 +68,15 @@ export default function ProfileCard({ profile, loading, onRefresh }) {
           <div className="rounded-xl border border-[var(--color-border)] p-4">
             <p className="text-sm font-bold text-[var(--color-text-sub)]">이메일</p>
             <p className="mt-1 truncate font-bold text-[var(--color-text)]">
-                  {loading ? "-" : safeProfile.email || "이메일 정보 없음"}
+              {loading ? "-" : safeProfile.email || "이메일 정보 없음"}
             </p>
           </div>
           <div className="rounded-xl border border-[var(--color-border)] p-4">
             <p className="text-sm font-bold text-[var(--color-text-sub)]">계정 상태</p>
             <div className="tag-list mt-2">
               <span className="badge">{loading ? "-" : statusLabel(safeProfile.status)}</span>
-              <span className={`badge ${safeProfile.emailVerified ? "badge-success" : "badge-warning"}`}>
-                {safeProfile.emailVerified ? "이메일 인증 완료" : "이메일 인증 확인 필요"}
+              <span className={`badge ${emailBadge.className}`}>
+                {loading ? "-" : emailBadge.label}
               </span>
             </div>
           </div>

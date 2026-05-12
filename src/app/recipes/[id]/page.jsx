@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams, useSearchParams, notFound } from "next/navigation";
+import { useParams } from "next/navigation";
 import RecipeIngredients from "@/components/recipe/RecipeIngredients";
 import RecipeInfoTable from "@/components/recipe/RecipeInfoTable";
 import RecipeStep from "@/components/recipe/RecipeStep";
@@ -9,12 +9,10 @@ import CookRecipeButton from "@/components/recipe/CookRecipeButton";
 import BookmarkButton from "@/components/recipe/BookmarkButton";
 import styles from "./Recipe.module.css";
 import { getRecipeDetail } from "@/api/recipeApi";
-import { notFound, useParams } from 'next/navigation';
 import PublicLayout from "@/components/layout/public/PublicLayout";
 
 export default function RecipePage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const id = params?.id;
 
   console.log(`[Step 1] 레시피 상세 페이지 컴포넌트 로드 시작 (ID: ${id})`);
@@ -62,8 +60,15 @@ export default function RecipePage() {
   }
 
   if (error || !recipeData) {
-    console.log("[Step 4] 에러 발생 또는 데이터 없음 - 404 페이지로 이동");
-    return notFound();
+    console.log("[Step 4] 에러 발생 또는 데이터 없음");
+
+    return (
+      <PrivateLayout>
+        <div className="flex justify-center items-center h-80">
+          <div>레시피를 찾을 수 없습니다.</div>
+        </div>
+      </PrivateLayout>
+    );
   }
 
   console.log("[Step 5] 데이터 가공 시작 (영양 성분 및 메타데이터)");

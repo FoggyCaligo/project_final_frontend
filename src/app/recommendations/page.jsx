@@ -54,7 +54,7 @@ export default function RecommendationsPage() {
             <Section>
                 <div className="grid gap-4 md:grid-cols-3">
                     {recipes.map((recipe) => (
-                        <Recipe
+                        < Recipe
                             key={recipe.recipeId}
                             recipeId={recipe.recipeId}
                             name={recipe.title}

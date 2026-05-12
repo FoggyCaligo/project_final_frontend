@@ -1,4 +1,5 @@
 import Link from "next/link";
+import styles from "./Dashboard.module.css";
 
 export default function DashboardFridgeCard({ items, loading, totalCount = items.length }) {
     const hasHiddenItems = !loading && totalCount > items.length;
@@ -6,7 +7,7 @@ export default function DashboardFridgeCard({ items, loading, totalCount = items
     return (
         <article className="card-box">
             <div className="card-body">
-                <div className="section-head mb-0">
+                <div className={`section-head mb-0 ${styles.sectionHead}`}>
                     <div>
                         <div className="flex flex-wrap items-center gap-2">
                             <h2 className="card-title">유통기한 임박 재료</h2>
@@ -20,8 +21,8 @@ export default function DashboardFridgeCard({ items, loading, totalCount = items
                                 : "냉장고 DB에서 먼저 확인할 재료를 가져옵니다."}
                         </p>
                     </div>
-                    <Link className="btn btn-outline" href="/fridge">
-                        냉장고 관리
+                    <Link className="btn btn-secondary shrink-0 whitespace-nowrap" href="/fridge">
+                        관리하기
                     </Link>
                 </div>
 
