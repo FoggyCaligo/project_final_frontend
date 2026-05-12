@@ -25,7 +25,6 @@ export function AuthProvider({ children }) {
       } catch {
         sessionStorage.removeItem("authUser");
         setUser(null);
-        router.push("/");
       }
     }
     setLoading(false);
@@ -86,11 +85,12 @@ export function AuthProvider({ children }) {
     }
   }, [pathname, router, login]);
 
-    // 로그아웃 후 호출: 세션 초기화
-    const logout = useCallback(() => {
-        sessionStorage.removeItem("authUser");
-        setUser(null);
-    }, []);
+  // 로그아웃 후 호출: 세션 초기화
+  const logout = useCallback(() => {
+    sessionStorage.removeItem("authUser");
+    setUser(null);
+    router.push("/");
+  }, [router]);
 
   // Provider의 value 객체가 매 렌더링마다 재생성되는 것을 방지하여 성능 최적화
   const contextValue = useMemo(

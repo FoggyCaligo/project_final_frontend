@@ -19,3 +19,6 @@ yarn-error.log*
 
 # AI 에이전트 문서 (개인용)
 .ai/
+
+env.example
+Dockfile
