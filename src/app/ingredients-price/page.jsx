@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { shoppingApi } from "@/api/shoppingApi";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import PropTypes from "prop-types";
@@ -260,6 +261,13 @@ function PriceCard({ data }) {
           />
         ))}
       </div>
+
+      {data.explanation && (
+        <div className="flex items-start gap-1.5 mt-1 px-1">
+          <span className="text-xs shrink-0">✨</span>
+          <p className="text-xs text-[#6b6560] leading-relaxed">{data.explanation}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -274,7 +282,8 @@ PriceCard.propTypes = {
 };
 
 export default function IngredientsPrice() {
-  const [search, setSearch] = useState("");
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [priceData, setPriceData] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -322,9 +331,25 @@ export default function IngredientsPrice() {
     }
   }, [fetchDefaultPrices]);
 
+  // URL query param ?search=간장 이 있으면 자동 검색 실행
   useEffect(() => {
-    fetchFridgePrices();
-  }, [fetchFridgePrices]);
+    const keyword = searchParams.get("search");
+    if (keyword?.trim()) {
+      setSearchLoading(true);
+      shoppingApi.searchByKeyword(keyword.trim())
+        .then((res) => {
+          const data = res.data?.data || res.data;
+          setSearchResult(data);
+        })
+        .catch((err) => {
+          console.error("자동 검색 실패:", err?.message);
+          setSearchResult(null);
+        })
+        .finally(() => setSearchLoading(false));
+    } else {
+      fetchFridgePrices();
+    }
+  }, [searchParams, fetchFridgePrices]);
 
   const handleSearch = useCallback(async () => {
     const keyword = search.trim();
@@ -444,6 +469,13 @@ export default function IngredientsPrice() {
                   />
                 ))}
               </div>
+
+              {searchResult.explanation && (
+                <div className="flex items-start gap-1.5 px-1">
+                  <span className="text-xs shrink-0">✨</span>
+                  <p className="text-xs text-[#6b6560] leading-relaxed">{searchResult.explanation}</p>
+                </div>
+              )}
             </div>
           </div>
         )}
