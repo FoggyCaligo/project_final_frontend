@@ -60,8 +60,6 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
-console.log("API_BASE_URL =", API_BASE_URL);
-console.log("X-User-Id =", config.headers["X-User-Id"]);
 
 api.interceptors.response.use(
   (response) => response,
