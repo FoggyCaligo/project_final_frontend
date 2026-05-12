@@ -25,6 +25,7 @@ export function AuthProvider({ children }) {
       } catch {
         sessionStorage.removeItem("authUser");
         setUser(null);
+        router.push("/");
       }
     }
     setLoading(false);
