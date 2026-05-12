@@ -1,10 +1,21 @@
 import axios from "axios";
 
-const API_BASE_URL = (
+const rawApiBaseUrl = (
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   "/api"
 ).replace(/\/$/, "");
+
+const isLocalhostUrl = /https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(rawApiBaseUrl);
+
+// In development, call backend directly (e.g. localhost:8080) when provided.
+// In production, keep same-origin '/api' fallback for safety.
+const API_BASE_URL =
+  process.env.NODE_ENV === "development"
+    ? rawApiBaseUrl
+    : isLocalhostUrl
+      ? "/api"
+      : rawApiBaseUrl;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
