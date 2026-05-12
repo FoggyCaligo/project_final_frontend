@@ -8,7 +8,6 @@ import DashboardSummaryCards from "./DashboardSummaryCards";
 import DashboardFridgeCard from "./DashboardFridgeCard";
 import DashboardInsightCard from "./DashboardInsightCard";
 import DashboardRecipeCard from "./DashboardRecipeCard";
-import DashboardNoticeCard from "./DashboardNoticeCard";
 import DashboardNoticeModal from "./DashboardNoticeModal";
 import DashboardShoppingCard from "./DashboardShoppingCard";
 
@@ -56,13 +55,12 @@ export default function DashboardHome() {
                 insights={view.insights}
                 loading={loading}
               />
-              <DashboardNoticeCard notices={view.notices} />
-              <DashboardShoppingCard shopping={view.shoppingSummary} loading={loading} />
               <DashboardFridgeCard
                 items={view.soonItems}
                 loading={loading}
                 totalCount={view.soonTotalCount}
               />
+              <DashboardShoppingCard shopping={view.shoppingSummary} loading={loading} />
             </div>
             <div className="dashboard-stack">
               <DashboardRecipeCard recipes={view.recipes} loading={loading} />
