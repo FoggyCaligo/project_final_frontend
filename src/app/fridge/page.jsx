@@ -2,7 +2,11 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { normalizeIngredientItem } from "@/lib/fridgeApiNormalize";
-import { fridgeApi } from "@/api/fridgeApi";
+import {
+    fridgeApi,
+    uploadFridgeImagesToRemotePhp,
+    deleteFridgeImageOnRemotePhp,
+} from "@/api/fridgeApi";
 import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import InputText from "@/components/ui/InputText.jsx"
 import Button from "@/components/ui/Button";
@@ -21,7 +25,7 @@ import { fileAssetPublicUrl } from "@/lib/fileAssetUrl";
 import { inferCategoryIdFromIngredientName } from "@/lib/ingredientCategoryHeuristic";
 
 // 모달 모드: 0: 닫힘, 1: 수정, 2: 추가
-const ModalModes = {close: 0, edit: 1, add: 2};
+const ModalModes = { close: 0, edit: 1, add: 2 };
 
 const StorageType = {
     REFRIGERATED: "REFRIGERATED",
@@ -86,6 +90,15 @@ class Ingredient {
     }
 }
 
+function mergeIngredientImageFromApi(prev, raw) {
+    const n = normalizeIngredientItem(raw ?? {});
+    return prev.cloneWith({
+        visionFileId: n.imageFileId ?? null,
+        imageStoragePath: n.imageStoragePath ?? null,
+        imageStoredName: n.imageStoredName ?? null,
+    });
+}
+
 function fromApiItem(raw) {
     const item = normalizeIngredientItem(raw);
     return new Ingredient(
@@ -103,7 +116,18 @@ function fromApiItem(raw) {
     );
 }
 
-function toApiDto(ingredient, fallbackFileId = null) {
+function categoryRowById(categories, categoryId) {
+    if (categoryId == null || categoryId === "") return null;
+    return (
+        categories.find(
+            (c) =>
+                c.categoryId === categoryId ||
+                String(c.categoryId) === String(categoryId)
+        ) ?? null
+    );
+}
+
+function toApiDto(ingredient, fallbackFileId = null, categories = []) {
     const q = Number(ingredient.qty);
     const dto = {
         name: ingredient.name,
@@ -116,7 +140,13 @@ function toApiDto(ingredient, fallbackFileId = null) {
     }
     const cid = ingredient.categoryId;
     if (cid != null && cid !== "") {
-        dto.categoryId = cid;
+        const row = categoryRowById(categories, cid);
+        const code = (row?.categoryCode ?? row?.category_code ?? "").toString().trim();
+        // 백엔드: category_code UNKNOWN(미분류)는 보내지 않음 → 마스터·이름 휴리스틱으로 채움
+        if (!code || code.toUpperCase() !== "UNKNOWN") {
+            const n = Number(cid);
+            dto.categoryId = Number.isFinite(n) ? n : cid;
+        }
     }
     const vf = ingredient.visionFileId ?? fallbackFileId;
     if (vf != null) {
@@ -172,6 +202,7 @@ export default function FridgePage() {
     const fileInputRef = useRef(null);
     /** state 갱신 타이밍과 무관하게 등록 시 file_id 전달 */
     const visionFileIdRef = useRef(null);
+    const submitInFlightRef = useRef(false);
 
     const [storage, setStorage] = useState([]);
     const [summary, setSummary] = useState(null);
@@ -183,6 +214,7 @@ export default function FridgePage() {
     const [mutatingText, setMutatingText] = useState("");
     /** 이미지 인식 API 실패 시 사용자 안내 */
     const [visionRecognitionError, setVisionRecognitionError] = useState("");
+    const [formError, setFormError] = useState("");
 
     const fetchIngredients = useCallback(async () => {
         try {
@@ -225,6 +257,7 @@ export default function FridgePage() {
     const closeModal = useCallback(() => {
         visionFileIdRef.current = null;
         setVisionRecognitionError("");
+        setFormError("");
         setModalMode(ModalModes.close);
     }, []);
 
@@ -241,28 +274,152 @@ export default function FridgePage() {
     }
 
     const handleConfirm = async () => {
-        const isEditMode = modalMode === ModalModes.edit;
-        if (isEditMode) {
-            setMutatingText("식재료 수정하는 중...");
-            setIsMutating(true);
+        if (submitInFlightRef.current) return;
+
+        setFormError("");
+        const name = String(currentIngredient.name ?? "").trim();
+        if (!name) {
+            setFormError("재료 이름을 입력해 주세요.");
+            return;
         }
+
+        const rawQty = currentIngredient.qty;
+        const qtyStr = rawQty === null || rawQty === undefined ? "" : String(rawQty).trim();
+        const qtyNum = qtyStr === "" ? NaN : Number(qtyStr.replace(/,/g, ""));
+        if (!Number.isFinite(qtyNum) || qtyNum < 1) {
+            setFormError("수량은 1 이상의 숫자로 입력해 주세요. (0이나 비워둔 채로 담을 수 없습니다)");
+            return;
+        }
+
+        if (
+            !currentIngredient.storageType ||
+            currentIngredient.storageType === StorageType.UNKNOWN
+        ) {
+            setFormError("보관 장소를 선택해 주세요.");
+            return;
+        }
+
+        submitInFlightRef.current = true;
+        const isEditMode = modalMode === ModalModes.edit;
+        setIsMutating(true);
+        setMutatingText(isEditMode ? "식재료 수정하는 중..." : "식재료 추가하는 중...");
+
         try {
-            const dto = toApiDto(currentIngredient, visionFileIdRef.current);
+            const localFile = scanner.file;
+
+            if (!isEditMode && localFile) {
+                const baseDto = { ...toApiDto(currentIngredient, null, categories) };
+                delete baseDto.file_id;
+                delete baseDto.fileId;
+                baseDto.remote_image_pending = true;
+                baseDto.remote_image_original_name = localFile.name;
+                baseDto.remote_image_mime_type = localFile.type || "image/jpeg";
+                baseDto.remote_image_size = localFile.size;
+                const res = await fridgeApi.addIngredient(baseDto);
+                const created = res.data?.data;
+                const iid = created?.ingredientId ?? created?.ingredient_id;
+                const fid = created?.imageFileId ?? created?.image_file_id;
+                if (iid == null || fid == null) {
+                    throw new Error("서버에서 식재료 또는 이미지 file_id 를 받지 못했습니다.");
+                }
+                try {
+                    const php = await uploadFridgeImagesToRemotePhp(fid, [localFile]);
+                    const row0 = Array.isArray(php?.data) ? php.data[0] : null;
+                    await fridgeApi.syncApacheImageResult(iid, {
+                        success: true,
+                        uploaded_count: php.uploaded_count,
+                        sha1sum: row0?.sha1sum,
+                        file_size: row0?.file_size,
+                        mime_type: row0?.mime_type,
+                    });
+                } catch {
+                    await fridgeApi.syncApacheImageResult(iid, { success: false });
+                    setFormError("이미지 업로드가 실패하였습니다");
+                    await fetchIngredients();
+                    await fetchSummary();
+                    return;
+                }
+                await fetchIngredients();
+                await fetchSummary();
+                closeModal();
+                return;
+            }
+
+            if (isEditMode && localFile && currentIngredient.id != null) {
+                const oldImgId = currentIngredient.visionFileId;
+                const st = await fridgeApi.stageApacheImageReplace(currentIngredient.id, {
+                    original_name: localFile.name,
+                    mime_type: localFile.type || "image/jpeg",
+                    file_size: localFile.size,
+                });
+                const staging = st.data?.data ?? st.data;
+                const pendingId =
+                    staging?.pending_file_id ?? staging?.pendingFileId;
+                if (pendingId == null) {
+                    throw new Error("스테이징 file_id 를 받지 못했습니다.");
+                }
+                try {
+                    const php = await uploadFridgeImagesToRemotePhp(pendingId, [localFile]);
+                    const row0 = Array.isArray(php?.data) ? php.data[0] : null;
+                    const applyRes = await fridgeApi.applyApacheReplaceResult(currentIngredient.id, {
+                        pending_file_id: pendingId,
+                        success: true,
+                        uploaded_count: php.uploaded_count,
+                        sha1sum: row0?.sha1sum,
+                        file_size: row0?.file_size,
+                        mime_type: row0?.mime_type,
+                    });
+                    const updated = applyRes.data?.data;
+                    if (updated) {
+                        setCurrentIngredient((prev) => mergeIngredientImageFromApi(prev, updated));
+                        visionFileIdRef.current =
+                            updated.imageFileId ?? updated.image_file_id ?? null;
+                    }
+                    if (oldImgId) {
+                        try {
+                            await deleteFridgeImageOnRemotePhp(oldImgId);
+                        } catch {
+                            /* 구 이미지 아파치 삭제 실패는 무시 */
+                        }
+                    }
+                } catch {
+                    await fridgeApi.applyApacheReplaceResult(currentIngredient.id, {
+                        pending_file_id: pendingId,
+                        success: false,
+                    });
+                    setFormError("이미지 업로드가 실패하였습니다");
+                    await fetchIngredients();
+                    await fetchSummary();
+                    return;
+                }
+            }
+
+            const dto = toApiDto(currentIngredient, visionFileIdRef.current, categories);
+            if (isEditMode && localFile) {
+                delete dto.file_id;
+                delete dto.fileId;
+            }
+
             if (modalMode === ModalModes.add) {
                 await fridgeApi.addIngredient(dto);
             } else if (modalMode === ModalModes.edit && editIdx !== null) {
                 await fridgeApi.updateIngredient(currentIngredient.id, dto);
             }
+
             await fetchIngredients();
             await fetchSummary();
             closeModal();
         } catch (err) {
             console.error("식재료 저장 실패:", err);
+            setFormError(
+                typeof err?.message === "string" && err.message.trim()
+                    ? err.message
+                    : "저장에 실패했습니다. 잠시 후 다시 시도해 주세요."
+            );
         } finally {
-            if (isEditMode) {
-                setIsMutating(false);
-                setMutatingText("");
-            }
+            submitInFlightRef.current = false;
+            setIsMutating(false);
+            setMutatingText("");
         }
     };
 
@@ -270,11 +427,20 @@ export default function FridgePage() {
         setMutatingText("식재료 삭제하는 중...");
         setIsMutating(true);
         try {
+            const fid = ingredient.visionFileId;
+            if (fid != null && Number(fid) > 0) {
+                await deleteFridgeImageOnRemotePhp(fid);
+            }
             await fridgeApi.deleteIngredient(ingredient.id);
             await fetchIngredients();
             await fetchSummary();
         } catch (err) {
             console.error("식재료 삭제 실패:", err);
+            window.alert(
+                typeof err?.message === "string" && err.message.trim()
+                    ? err.message
+                    : "원격 이미지 삭제 또는 식재료 삭제에 실패했습니다."
+            );
         } finally {
             setIsMutating(false);
             setMutatingText("");
@@ -299,6 +465,7 @@ export default function FridgePage() {
                         <Button handleClick={() => {
                             visionFileIdRef.current = null;
                             setVisionRecognitionError("");
+                            setFormError("");
                             setCurrentIngredient(new Ingredient());
                             setScanner(new ImageScanner());
                             setModalMode(ModalModes.add);
@@ -326,6 +493,8 @@ export default function FridgePage() {
                                                         if (ingredient) {
                                                             visionFileIdRef.current =
                                                                 ingredient.visionFileId ?? null;
+                                                            setFormError("");
+                                                            setVisionRecognitionError("");
                                                             setCurrentIngredient(ingredient);
                                                             setScanner(new ImageScanner());
                                                             setEditIdx(storage.indexOf(ingredient));
@@ -358,6 +527,8 @@ export default function FridgePage() {
                                 freshnessStatus={each.freshnessStatus}
                                 handleClickDelete={() => handleClickDelete(each)}
                                 handleClickEdit={() => {
+                                    setFormError("");
+                                    setVisionRecognitionError("");
                                     setCurrentIngredient(each);
                                     setScanner(new ImageScanner());
                                     setEditIdx(idx);
@@ -393,6 +564,8 @@ export default function FridgePage() {
                                         handleClickDelete={() => handleClickDelete(each)}
                                         handleClickEdit={() => {
                                             visionFileIdRef.current = each.visionFileId ?? null;
+                                            setFormError("");
+                                            setVisionRecognitionError("");
                                             setCurrentIngredient(each);
                                             setScanner(new ImageScanner());
                                             setEditIdx(storage.indexOf(each));
@@ -414,7 +587,8 @@ export default function FridgePage() {
                     isOpen={modalMode !== ModalModes.close}
                     onClose={closeModal}
                     onConfirm={handleConfirm}
-                    confirmText={modalMode === ModalModes.add ? "추가" : "수정"}>
+                    confirmText={modalMode === ModalModes.add ? "추가" : "수정"}
+                >
                     <div className="flex flex-col gap-4">
                         {!scanner.previewUrl &&
                             (currentIngredient.imageStoragePath ||
@@ -499,9 +673,9 @@ export default function FridgePage() {
                                 handleClick={() => fileInputRef.current?.click()}
                             >
                                 {modalMode === ModalModes.edit &&
-                                (currentIngredient.imageStoragePath ||
-                                    currentIngredient.imageStoredName ||
-                                    scanner.previewUrl)
+                                    (currentIngredient.imageStoragePath ||
+                                        currentIngredient.imageStoredName ||
+                                        scanner.previewUrl)
                                     ? "이미지 수정"
                                     : "이미지 인식"}
                             </Button>
@@ -521,33 +695,23 @@ export default function FridgePage() {
                                         }
                                         return prev.cloneWith({ file, previewUrl, results: [] });
                                     });
+
                                     setIsRecognizing(true);
                                     try {
                                         const res = await fridgeApi.recognizeIngredientImage(file, 3);
                                         const payload = res.data?.data;
-                                        const candidates =
-                                            payload?.recognizedCandidates ?? [];
+                                        const candidates = payload?.recognizedCandidates ?? [];
                                         const results = mapVisionCandidatesForUi(candidates);
+
                                         setScanner((prev) =>
                                             prev.cloneWith({ file, previewUrl, results })
                                         );
-                                        let fid =
-                                            payload?.fileId ??
-                                            payload?.file_id ??
-                                            payload?.imageFileId;
-                                        if (typeof fid === "string" && /^\d+$/.test(fid)) {
-                                            fid = Number(fid);
-                                        }
-                                        if (typeof fid === "number" && Number.isFinite(fid) && fid > 0) {
-                                            visionFileIdRef.current = fid;
-                                            setCurrentIngredient((prev) =>
-                                                prev.cloneWith({ visionFileId: fid })
-                                            );
-                                        }
                                     } catch (err) {
                                         console.error("이미지 인식 실패:", err);
                                         setVisionRecognitionError(
-                                            "이미지 인식에 실패했습니다. 서버·네트워크 상태를 확인하거나, 재료 이름을 직접 입력해 주세요."
+                                            typeof err?.message === "string" && err.message.trim()
+                                                ? err.message
+                                                : "이미지 인식 또는 원격 저장에 실패했습니다. 서버·네트워크 상태를 확인하거나, 재료 이름을 직접 입력해 주세요."
                                         );
                                         visionFileIdRef.current = null;
                                         setScanner((prev) =>
@@ -566,6 +730,11 @@ export default function FridgePage() {
                         {visionRecognitionError ? (
                             <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
                                 {visionRecognitionError}
+                            </p>
+                        ) : null}
+                        {formError ? (
+                            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-900">
+                                {formError}
                             </p>
                         ) : null}
                         <Select
