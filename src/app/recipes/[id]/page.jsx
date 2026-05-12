@@ -9,7 +9,6 @@ import CookRecipeButton from "@/components/recipe/CookRecipeButton";
 import BookmarkButton from "@/components/recipe/BookmarkButton";
 import styles from "./Recipe.module.css";
 import { getRecipeDetail } from "@/api/recipeApi";
-import { notFound, useParams } from 'next/navigation';
 import PublicLayout from "@/components/layout/public/PublicLayout";
 
 export default function RecipePage() {
