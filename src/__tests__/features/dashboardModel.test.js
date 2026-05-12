@@ -59,7 +59,7 @@ describe("buildDashboardView", () => {
     expect(view.soonItems).toHaveLength(1);
     expect(view.soonItems[0]).toEqual(expect.objectContaining({ id: 1, name: "milk", quantity: "1L" }));
     expect(view.soonTotalCount).toBe(1);
-    expect(view.recipes.map((recipe) => recipe.title)).toEqual(["fried rice", "salad", "soup"]);
+    expect(view.recipes.map((recipe) => recipe.title)).toEqual(["fried rice", "salad", "soup", "pasta"]);
     expect(view.personalizationSignals).toEqual({
       hasFridgeData: true,
       hasUrgentIngredients: true,
@@ -72,6 +72,21 @@ describe("buildDashboardView", () => {
         totalLowestPrice: 2500,
         lowestItem: expect.objectContaining({ ingredientName: "milk" }),
       }),
+    );
+    expect(view.notices).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "expired",
+          title: "만료 재료 1개 확인이 필요합니다",
+          href: "/fridge",
+          actionLabel: "냉장고 보기",
+        }),
+        expect.objectContaining({
+          id: "recommend",
+          href: "/recommendations",
+          actionLabel: "추천 보기",
+        }),
+      ]),
     );
   });
 
@@ -93,6 +108,26 @@ describe("buildDashboardView", () => {
     expect(view.soonItems[0]).toEqual(expect.objectContaining({ id: "summary-item", name: "summary milk" }));
     expect(view.soonTotalCount).toBe(2);
     expect(view.notices).toEqual(expect.arrayContaining([expect.objectContaining({ id: "error-dashboard" })]));
+  });
+
+  it("sorts dashboard recipe previews by match rate", () => {
+    const view = buildDashboardView({
+      summary: { totalCount: 3 },
+      ingredients: [{ id: 1, name: "potato" }],
+      recipes: [
+        { recipeId: 1, title: "low", matchRate: 20 },
+        { recipeId: 2, title: "high", matchRate: 100 },
+        { recipeId: 3, title: "middle", matchRate: 75 },
+        { recipeId: 4, title: "second", matchRate: 90 },
+        { recipeId: 5, title: "fourth", matchRate: 60 },
+        { recipeId: 6, title: "hidden", matchRate: 10 },
+      ],
+      recommendationTotalCount: 6,
+      shoppingPrices: [],
+      errors: [],
+    });
+
+    expect(view.recipes.map((recipe) => recipe.title)).toEqual(["high", "second", "middle", "fourth", "low"]);
   });
 
   it("hides recommendation totals when the fridge is empty", () => {

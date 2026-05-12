@@ -6,6 +6,7 @@ import { getMeApi } from "@/api/authApi";
 import PropTypes from "prop-types";
 
 const AuthContext = createContext(null);
+const DASHBOARD_NOTICE_MODAL_SESSION_KEY = "today-fridge-dashboard-notice-modal-shown";
 
 // user 구조: { loginId: string, loginType: 'general' | 'kakao', nickname: string, userId: number | null } | null
 export function AuthProvider({ children }) {
@@ -50,6 +51,7 @@ export function AuthProvider({ children }) {
     }
     const userData = { loginId, loginType, nickname: finalNickname, userId };
     try {
+      sessionStorage.removeItem(DASHBOARD_NOTICE_MODAL_SESSION_KEY);
       sessionStorage.setItem("authUser", JSON.stringify(userData));
     } catch (e) {
       console.warn("sessionStorage 저장 에러:", e);
@@ -74,6 +76,7 @@ export function AuthProvider({ children }) {
       sessionStorage.removeItem("redirectAfterLogin");
 
       if (loginId) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         login(loginId, "kakao", nickname).then(() => {
           router.replace(redirectPath);
         });
@@ -88,6 +91,7 @@ export function AuthProvider({ children }) {
   // 로그아웃 후 호출: 세션 초기화
   const logout = useCallback(() => {
     sessionStorage.removeItem("authUser");
+    sessionStorage.removeItem(DASHBOARD_NOTICE_MODAL_SESSION_KEY);
     setUser(null);
     router.push("/");
   }, [router]);

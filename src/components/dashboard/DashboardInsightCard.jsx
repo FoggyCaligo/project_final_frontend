@@ -1,26 +1,22 @@
-const toneClassMap = {
-  danger: "dashboard-bar-danger",
-  neutral: "dashboard-bar-neutral",
-  success: "dashboard-bar-success",
-  warning: "dashboard-bar-warning",
-};
+import styles from "./Dashboard.module.css";
 
-const tipBadgeMap = {
-  danger: "badge-danger",
-  success: "badge-success",
-  warning: "badge-warning",
+const toneClassMap = {
+  danger: styles.barDanger,
+  neutral: styles.barNeutral,
+  success: styles.barSuccess,
+  warning: styles.barWarning,
 };
 
 function MetricBar({ item }) {
   return (
-    <div className="dashboard-metric-row">
+    <div className={styles.metricRow}>
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-bold text-[var(--color-text)]">{item.label}</span>
         <span className="text-sm font-extrabold text-[var(--color-text-sub)]">{item.value}개</span>
       </div>
-      <div className="dashboard-bar-track">
+      <div className={styles.barTrack}>
         <div
-          className={`dashboard-bar-fill ${toneClassMap[item.tone] ?? toneClassMap.neutral}`}
+          className={`${styles.barFill} ${toneClassMap[item.tone] ?? toneClassMap.neutral}`}
           style={{ width: `${item.percent}%` }}
         />
       </div>
@@ -28,7 +24,7 @@ function MetricBar({ item }) {
   );
 }
 
-export default function DashboardInsightCard({ insights, loading, displayName = "회원" }) {
+export default function DashboardInsightCard({ insights, loading }) {
   const overviewBars = insights?.overviewBars ?? [];
   const storageBreakdown = insights?.storageBreakdown ?? [];
   const tip = insights?.tip ?? null;
@@ -36,16 +32,13 @@ export default function DashboardInsightCard({ insights, loading, displayName = 
   return (
     <article className="card-box">
       <div className="card-body">
-        <div className="section-head mb-0">
+        <div className={`section-head mb-0 ${styles.sectionHead}`}>
           <div>
-            <h2 className="card-title">{displayName}님 개인화 분석</h2>
+            <h2 className="card-title">냉장고 상태 요약</h2>
             <p className="card-desc">
-              냉장고, 추천, 쇼핑 데이터를 조합해 오늘의 우선순위를 보여줍니다.
+              냉장고 재료와 추천 결과를 기준으로 먼저 확인할 항목을 정리합니다.
             </p>
           </div>
-          <span className={`badge ${tipBadgeMap[tip?.tone] ?? ""}`}>
-            {loading ? "분석 중" : "자동 분석"}
-          </span>
         </div>
 
         {tip && (
