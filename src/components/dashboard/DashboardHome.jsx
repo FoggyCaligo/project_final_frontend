@@ -1,19 +1,22 @@
 "use client";
 
 import { useMemo } from "react";
-import { dashboardQuickLinks } from "@/features/dashboard/constants";
+import { useAuth } from "@/context/AuthContext";
 import { buildDashboardView } from "@/features/dashboard/dashboardModel";
 import { useDashboardData } from "@/features/dashboard/useDashboardData";
 import DashboardHero from "./DashboardHero";
 import DashboardSummaryCards from "./DashboardSummaryCards";
 import DashboardFridgeCard from "./DashboardFridgeCard";
+import DashboardInsightCard from "./DashboardInsightCard";
 import DashboardRecipeCard from "./DashboardRecipeCard";
-import DashboardQuickLinks from "./DashboardQuickLinks";
 import DashboardNoticeCard from "./DashboardNoticeCard";
+import DashboardShoppingCard from "./DashboardShoppingCard";
 
 export default function DashboardHome() {
+  const { user } = useAuth();
   const { dashboard, loading, refresh } = useDashboardData();
   const view = useMemo(() => buildDashboardView(dashboard), [dashboard]);
+  const displayName = user?.nickname || user?.loginId || "회원";
 
   return (
     <div className="layout-container">
@@ -26,20 +29,24 @@ export default function DashboardHome() {
       <DashboardSummaryCards items={view.summaryCards} loading={loading} />
 
       <section className="section-block">
-        <div className="grid-2">
-          <DashboardFridgeCard
-            items={view.soonItems}
-            loading={loading}
-            totalCount={view.soonTotalCount}
-          />
-          <DashboardRecipeCard recipes={view.recipes} loading={loading} />
-        </div>
-      </section>
-
-      <section className="section-block">
-        <div className="grid-2">
-          <DashboardQuickLinks links={dashboardQuickLinks} />
-          <DashboardNoticeCard notices={view.notices} />
+        <div className="dashboard-main-grid">
+          <div className="dashboard-stack">
+            <DashboardInsightCard
+              displayName={displayName}
+              insights={view.insights}
+              loading={loading}
+            />
+            <DashboardNoticeCard notices={view.notices} />
+            <DashboardShoppingCard shopping={view.shoppingSummary} loading={loading} />
+            <DashboardFridgeCard
+              items={view.soonItems}
+              loading={loading}
+              totalCount={view.soonTotalCount}
+            />
+          </div>
+          <div className="dashboard-stack">
+            <DashboardRecipeCard recipes={view.recipes} loading={loading} />
+          </div>
         </div>
       </section>
     </div>
