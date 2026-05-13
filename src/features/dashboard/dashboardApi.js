@@ -47,24 +47,17 @@ function addRejectedSource(errors, result, label) {
   }
 }
 
-export async function requestDashboardData() {
-  const [
-    summaryResult,
-    ingredientsResult,
-    recommendationsResult,
-    shoppingResult,
-  ] = await Promise.allSettled([
+export async function requestDashboardBaseData() {
+  const [summaryResult, ingredientsResult, shoppingResult] = await Promise.allSettled([
     fridgeApi.getSummary(),
     fridgeApi.getIngredients(),
-    getRecommendations(0, DASHBOARD_RECOMMENDATION_PAGE_SIZE),
     shoppingApi.getFridgePrices(),
   ]);
 
   const errors = [];
   addRejectedSource(errors, summaryResult, "냉장고 요약");
   addRejectedSource(errors, ingredientsResult, "식재료 목록");
-  addRejectedSource(errors, recommendationsResult, "추천 레시피");
-  addRejectedSource(errors, shoppingResult, "쇼핑 최저가");
+  addRejectedSource(errors, shoppingResult, "최저가");
 
   return {
     ...initialDashboardData,
@@ -76,18 +69,39 @@ export async function requestDashboardData() {
       ingredientsResult.status === "fulfilled"
         ? getIngredientItems(ingredientsResult.value)
         : [],
-    recipes:
-      recommendationsResult.status === "fulfilled"
-        ? getRecommendationItems(recommendationsResult.value)
-        : [],
-    recommendationTotalCount:
-      recommendationsResult.status === "fulfilled"
-        ? getRecommendationTotalCount(recommendationsResult.value)
-        : 0,
     shoppingPrices:
       shoppingResult.status === "fulfilled"
         ? toArray(getDashboardPayload(shoppingResult.value, []))
         : [],
     errors,
+  };
+}
+
+export async function requestDashboardRecommendations() {
+  const result = await Promise.allSettled([
+    getRecommendations(0, DASHBOARD_RECOMMENDATION_PAGE_SIZE),
+  ]).then((results) => results[0]);
+
+  const errors = [];
+  addRejectedSource(errors, result, "추천 레시피");
+
+  return {
+    recipes: result.status === "fulfilled" ? getRecommendationItems(result.value) : [],
+    recommendationTotalCount:
+      result.status === "fulfilled" ? getRecommendationTotalCount(result.value) : 0,
+    errors,
+  };
+}
+
+export async function requestDashboardData() {
+  const [baseData, recommendationData] = await Promise.all([
+    requestDashboardBaseData(),
+    requestDashboardRecommendations(),
+  ]);
+
+  return {
+    ...baseData,
+    ...recommendationData,
+    errors: [...baseData.errors, ...recommendationData.errors],
   };
 }

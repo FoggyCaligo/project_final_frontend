@@ -1,15 +1,7 @@
 "use client";
 
-const initialForm = {
-  heightCm: "",
-  weightKg: "",
-  gender: "",
-  age: "",
-  milkAllergy: false,
-  eggAllergy: false,
-  diet: false,
-  lowSodium: false,
-};
+import { useState } from "react";
+import { requestConditionUpdate, requestProfileUpdate } from "@/features/mypage/mypageApi";
 
 function getInitialForm(profile) {
   return {
@@ -39,9 +31,55 @@ function CheckboxField({ defaultChecked, disabled, label, name }) {
   );
 }
 
+function toNullableNumber(value) {
+  const trimmed = String(value ?? "").trim();
+  return trimmed === "" ? null : Number(trimmed);
+}
+
+function getErrorMessage(error) {
+  return error?.message ?? "건강 정보 저장 중 오류가 발생했습니다.";
+}
+
 export default function HealthPreferenceCard({ profile, loading }) {
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const defaults = getInitialForm(profile);
   const profileVersion = Object.values(defaults).join(":");
+  const disabled = loading || saving;
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setMessage("");
+    setError("");
+    setSaving(true);
+
+    const formData = new FormData(event.currentTarget);
+    const profilePayload = {
+      nickname: profile?.nickname ?? null,
+      profileImageUrl: profile?.profileImageUrl ?? null,
+      heightCm: toNullableNumber(formData.get("heightCm")),
+      weightKg: toNullableNumber(formData.get("weightKg")),
+      age: toNullableNumber(formData.get("age")),
+      gender: formData.get("gender") || null,
+    };
+    const conditionPayload = {
+      milkAllergy: formData.has("milkAllergy"),
+      eggAllergy: formData.has("eggAllergy"),
+      diet: formData.has("diet"),
+      lowSodium: formData.has("lowSodium"),
+    };
+
+    try {
+      await requestProfileUpdate(profilePayload);
+      await requestConditionUpdate(conditionPayload, profile?.userId);
+      setMessage("건강 정보가 저장되었습니다.");
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <article className="card-box mt-5">
@@ -53,17 +91,17 @@ export default function HealthPreferenceCard({ profile, loading }) {
               추천 레시피에 활용할 신체 정보와 식단 조건을 관리합니다.
             </p>
           </div>
-          <span className="badge badge-warning">저장 준비 중</span>
+          <span className="badge badge-success">저장 가능</span>
         </div>
 
-        <form className="mt-5" key={profileVersion}>
+        <form className="mt-5" key={profileVersion} onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <label className="form-group mb-0">
               <span className="form-label">키</span>
               <input
                 className="form-input"
                 defaultValue={defaults.heightCm}
-                disabled={loading}
+                disabled={disabled}
                 inputMode="decimal"
                 name="heightCm"
                 placeholder="cm"
@@ -76,7 +114,7 @@ export default function HealthPreferenceCard({ profile, loading }) {
               <input
                 className="form-input"
                 defaultValue={defaults.weightKg}
-                disabled={loading}
+                disabled={disabled}
                 inputMode="decimal"
                 name="weightKg"
                 placeholder="kg"
@@ -89,7 +127,7 @@ export default function HealthPreferenceCard({ profile, loading }) {
               <select
                 className="form-select"
                 defaultValue={defaults.gender}
-                disabled={loading}
+                disabled={disabled}
                 name="gender"
               >
                 <option value="">선택 안 함</option>
@@ -104,7 +142,7 @@ export default function HealthPreferenceCard({ profile, loading }) {
               <input
                 className="form-input"
                 defaultValue={defaults.age}
-                disabled={loading}
+                disabled={disabled}
                 inputMode="numeric"
                 name="age"
                 placeholder="만 나이"
@@ -116,33 +154,44 @@ export default function HealthPreferenceCard({ profile, loading }) {
           <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
             <CheckboxField
               defaultChecked={defaults.milkAllergy}
-              disabled={loading}
+              disabled={disabled}
               label="우유 알러지"
               name="milkAllergy"
             />
             <CheckboxField
               defaultChecked={defaults.eggAllergy}
-              disabled={loading}
+              disabled={disabled}
               label="계란 알러지"
               name="eggAllergy"
             />
             <CheckboxField
               defaultChecked={defaults.diet}
-              disabled={loading}
+              disabled={disabled}
               label="다이어트"
               name="diet"
             />
             <CheckboxField
               defaultChecked={defaults.lowSodium}
-              disabled={loading}
+              disabled={disabled}
               label="저염식"
               name="lowSodium"
             />
           </div>
 
+          {message && (
+            <p className="mt-4 rounded-xl bg-[var(--color-primary-soft)] px-4 py-3 text-sm font-bold text-[var(--color-primary)]">
+              {message}
+            </p>
+          )}
+          {error && (
+            <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+              {error}
+            </p>
+          )}
+
           <div className="card-actions">
-            <button className="btn btn-secondary" disabled type="button">
-              저장
+            <button className="btn btn-secondary" disabled={disabled} type="submit">
+              {saving ? "저장 중..." : "저장"}
             </button>
           </div>
         </form>

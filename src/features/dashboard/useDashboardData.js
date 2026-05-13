@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { initialDashboardData } from "./constants";
-import { requestDashboardData } from "./dashboardApi";
+import {
+  requestDashboardBaseData,
+  requestDashboardRecommendations,
+} from "./dashboardApi";
 
 export function useDashboardData() {
   const [dashboard, setDashboard] = useState(initialDashboardData);
@@ -13,14 +16,27 @@ export function useDashboardData() {
     let ignore = false;
 
     async function loadDashboard() {
-      const data = await requestDashboardData();
+      setLoading(true);
+      const baseData = await requestDashboardBaseData();
 
       if (ignore) {
         return;
       }
 
-      setDashboard(data);
+      setDashboard(baseData);
       setLoading(false);
+
+      const recommendationData = await requestDashboardRecommendations();
+
+      if (ignore) {
+        return;
+      }
+
+      setDashboard((current) => ({
+        ...current,
+        ...recommendationData,
+        errors: [...current.errors, ...recommendationData.errors],
+      }));
     }
 
     loadDashboard();

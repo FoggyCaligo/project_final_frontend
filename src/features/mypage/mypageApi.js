@@ -38,6 +38,33 @@ async function requestCurrentProfile() {
   return normalizeProfile(unwrapApiData(response, null));
 }
 
+function getSessionUserId() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = sessionStorage.getItem("authUser") || sessionStorage.getItem("user");
+    const user = raw ? JSON.parse(raw) : null;
+    return user?.userId ?? user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function requestProfileUpdate(payload) {
+  const response = await api.patch("/v1/users/me/profile", payload);
+  return normalizeProfile(unwrapApiData(response, null));
+}
+
+export async function requestConditionUpdate(payload, userId) {
+  const resolvedUserId = userId ?? getSessionUserId();
+  const response = await api.put("/v1/users/me/conditions", payload, {
+    headers: resolvedUserId ? { "X-User-Id": String(resolvedUserId) } : undefined,
+  });
+  return unwrapApiData(response, null);
+}
+
 export async function requestPasswordChange({ currentPassword, newPassword }) {
   const response = await api.patch("/v1/users/me/password", {
     currentPassword,
