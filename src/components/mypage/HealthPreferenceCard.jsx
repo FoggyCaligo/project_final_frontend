@@ -1,4 +1,5 @@
 "use client";
+import { requestHealthPreferenceSave } from "@/api/myPageApi";
 
 const initialForm = {
   heightCm: "",
@@ -38,11 +39,25 @@ function CheckboxField({ defaultChecked, disabled, label, name }) {
     </label>
   );
 }
-
 export default function HealthPreferenceCard({ profile, loading }) {
   const defaults = getInitialForm(profile);
   const profileVersion = Object.values(defaults).join(":");
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.currentTarget);
+
+    const payload = {
+      milkAllergy: formData.get("milkAllergy") === "on",
+      eggAllergy: formData.get("eggAllergy") === "on",
+      diet: formData.get("diet") === "on",
+      lowSodium: formData.get("lowSodium") === "on",
+    };
+
+    await requestHealthPreferenceSave(payload);
+    alert("건강 정보가 저장되었습니다.");
+  };
   return (
     <article className="card-box mt-5">
       <div className="card-body">
@@ -53,10 +68,9 @@ export default function HealthPreferenceCard({ profile, loading }) {
               추천 레시피에 활용할 신체 정보와 식단 조건을 관리합니다.
             </p>
           </div>
-          <span className="badge badge-warning">저장 준비 중</span>
         </div>
 
-        <form className="mt-5" key={profileVersion}>
+        <form className="mt-5" key={profileVersion} onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <label className="form-group mb-0">
               <span className="form-label">키</span>
@@ -141,7 +155,11 @@ export default function HealthPreferenceCard({ profile, loading }) {
           </div>
 
           <div className="card-actions">
-            <button className="btn btn-secondary" disabled type="button">
+            <button
+              className="btn btn-secondary"
+              disabled={loading}
+              type="submit"
+            >
               저장
             </button>
           </div>
