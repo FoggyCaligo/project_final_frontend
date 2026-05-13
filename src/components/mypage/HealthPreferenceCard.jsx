@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { requestConditionUpdate, requestProfileUpdate } from "@/features/mypage/mypageApi";
+import { requestHealthPreferenceSave, updatePhysicalMetrics } from "@/api/myPageApi";
 
 function getInitialForm(profile) {
   return {
@@ -40,7 +40,7 @@ function getErrorMessage(error) {
   return error?.message ?? "건강 정보 저장 중 오류가 발생했습니다.";
 }
 
-export default function HealthPreferenceCard({ profile, loading }) {
+export default function HealthPreferenceCard({ profile, loading, onRefresh }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -55,13 +55,11 @@ export default function HealthPreferenceCard({ profile, loading }) {
     setSaving(true);
 
     const formData = new FormData(event.currentTarget);
-    const profilePayload = {
-      nickname: profile?.nickname ?? null,
-      profileImageUrl: profile?.profileImageUrl ?? null,
+    const physicalPayload = {
       heightCm: toNullableNumber(formData.get("heightCm")),
       weightKg: toNullableNumber(formData.get("weightKg")),
-      age: toNullableNumber(formData.get("age")),
       gender: formData.get("gender") || null,
+      age: toNullableNumber(formData.get("age")),
     };
     const conditionPayload = {
       milkAllergy: formData.has("milkAllergy"),
@@ -71,9 +69,12 @@ export default function HealthPreferenceCard({ profile, loading }) {
     };
 
     try {
-      await requestProfileUpdate(profilePayload);
-      await requestConditionUpdate(conditionPayload, profile?.userId);
+      await Promise.all([
+        updatePhysicalMetrics(physicalPayload),
+        requestHealthPreferenceSave(conditionPayload),
+      ]);
       setMessage("건강 정보가 저장되었습니다.");
+      onRefresh?.();
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
