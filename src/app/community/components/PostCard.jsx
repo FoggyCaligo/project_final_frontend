@@ -156,8 +156,8 @@ export default function PostCard({ postId, title, author, authorUserId, date, de
                         상세 보기
                     </button>
 
-                    {/* 💡 본인 글이 아닐 때만 좋아요 버튼 렌더링 */}
-                    {!isAuthor && (
+                    {/* 💡 로그인 상태이면서 동시에 본인 글이 아닐 때만 좋아요 버튼 렌더링 */}
+                    {currentUser && !isAuthor && (
                         <button 
                             className={`btn px-3 py-1.5 text-sm flex items-center gap-1.5 transition-all duration-300 active:scale-95 whitespace-nowrap ${
                                 isLiked ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-md' : 'btn-outline'
@@ -174,8 +174,8 @@ export default function PostCard({ postId, title, author, authorUserId, date, de
                         </button>
                     )}
 
-                    {/* 💡 본인 글이 아닐 때만 신고 버튼 렌더링 */}
-                    {!isAuthor && (
+                    {/* 💡 로그인 상태이면서 동시에 본인 글이 아닐 때만 신고 버튼 렌더링 */}
+                    {currentUser && !isAuthor && (
                         <button 
                             className={`btn px-3 py-1.5 text-sm flex items-center gap-1.5 transition-all whitespace-nowrap ${
                                 isReported ? 'bg-gray-400 text-white border-gray-400 cursor-not-allowed' : 'bg-red-500 text-white hover:bg-red-600 border-red-500 active:scale-95'

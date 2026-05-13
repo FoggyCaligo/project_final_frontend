@@ -7,11 +7,33 @@ import InputText from '@/components/ui/InputText';
 import CustomTag from '@/components/ui/Tag';
 import Section from '@/components/ui/Section';
 import PostCard from '@/app/community/components/PostCard';
+import Modal from '@/components/ui/Modal'; 
+import Link from 'next/link'; 
+import { useAuth } from "@/context/AuthContext"; 
+import { loginApi } from "@/api/authApi"; 
 import { getBookmarkedRecipes } from '@/api/bookmarkApi';
 import { uploadImages, createPost, getUserPosts } from '@/api/postApi';
-// 💡 fileAssetPublicUrl 임포트 제거됨
 
 export default function CommunityRegisterPage() {
+    const router = useRouter();
+    const { login } = useAuth();
+
+    // 💡 로그인 관련 상태 (LoginButton.jsx 완벽 동기화)
+    const [isLoginNeeded, setIsLoginNeeded] = useState(false);
+    const [loginId, setLoginId] = useState("");
+    const [password, setPassword] = useState("");
+    const [loginError, setLoginError] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    
+    // 이메일 인증 완료 후 리다이렉트 시 ?emailVerified=true 표시용
+    const [emailVerifiedMsg, setEmailVerifiedMsg] = useState(
+        typeof window !== "undefined" &&
+            new URLSearchParams(window.location.search).get("emailVerified") === "true"
+            ? "이메일 인증이 완료되었습니다. 로그인해주세요."
+            : ""
+    );
+
+    // 기존 상태들
     const [images, setImages] = useState([]);
     const [isDragActive, setIsDragActive] = useState(false);
     const fileInputRef = useRef(null);
@@ -23,23 +45,23 @@ export default function CommunityRegisterPage() {
     const [isLoading, setIsLoading] = useState(false);   
 
     const [currentUserId, setCurrentUserId] = useState(null);
-    const router = useRouter();
 
-    // 1. 세션 정보 로드
+    // 1. 세션 정보 로드 및 권한 체크
     useEffect(() => {
         const authUserStr = sessionStorage.getItem('authUser');
         if (authUserStr) {
             try {
                 const authUser = JSON.parse(authUserStr);
                 setCurrentUserId(authUser.userId);
+                setIsLoginNeeded(false);
             } catch (error) {
                 console.error("세션 파싱 오류:", error);
+                setIsLoginNeeded(true);
             }
         } else {
-            alert("로그인이 필요한 서비스입니다.");
-            router.push('/login'); 
+            setIsLoginNeeded(true);
         }
-    }, [router]);
+    }, []);
     
     // 2. 초기 데이터 로드 (북마크, 최근 후기)
     useEffect(() => {
@@ -50,7 +72,6 @@ export default function CommunityRegisterPage() {
                 const bookmarkData = await getBookmarkedRecipes(currentUserId);
                 setBookmarkedRecipes(bookmarkData);
                 
-                // 첫 번째 항목 자동 선택 (recipeId, title 적용)
                 if (bookmarkData && bookmarkData.length > 0) {
                     setRecipe(bookmarkData[0].recipeId.toString());
                 }
@@ -71,7 +92,39 @@ export default function CommunityRegisterPage() {
         };
     }, [images]);
     
-    // 💡 이미지 경로 직접 지정 방식으로 수정됨
+    // 💡 직접 로그인 처리 함수 (오리지널 로직 100% 동일)
+    const handleDirectLogin = async () => {
+        setLoginError("");
+        if (!loginId || !password) {
+            setLoginError("아이디와 비밀번호를 입력해주세요.");
+            return;
+        }
+        try {
+            await loginApi(loginId, password);
+            await login(loginId, "general");
+            
+            const updatedUserStr = sessionStorage.getItem('authUser');
+            if (updatedUserStr) {
+                const updatedUser = JSON.parse(updatedUserStr);
+                setCurrentUserId(updatedUser.userId);
+            }
+            setIsLoginNeeded(false);
+        } catch (err) {
+            setLoginError(err.message || "로그인에 실패했습니다.");
+        }
+    };
+
+    // 💡 카카오 로그인 처리 함수 (오리지널 로직 100% 동일)
+    const handleKakaoLogin = () => {
+        const apiBase = (
+            process.env.NEXT_PUBLIC_API_URL ||
+            process.env.NEXT_PUBLIC_API_BASE_URL ||
+            "/api"
+        ).replace(/\/$/, "");
+
+        window.location.href = `${apiBase}/v1/auth/kakao/login`;
+    };
+
     const getImageUrl = (storagePath, storedName) => {
         if (!storedName) return placeholderSvg;
         return `https://www.todayfridge.today/uploads/community/${storedName}`;
@@ -94,6 +147,7 @@ export default function CommunityRegisterPage() {
         if (isLoading) return;
         if (!currentUserId) {
             alert("로그인 정보를 확인할 수 없습니다.");
+            setIsLoginNeeded(true);
             return;
         }
         if (images.length === 0) {
@@ -167,6 +221,96 @@ export default function CommunityRegisterPage() {
 
     const placeholderSvg = "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%271280%27%20height%3D%27800%27%20viewBox%3D%270%200%201280%20800%27%3E%3Crect%20width%3D%27100%25%27%20height%3D%27100%25%27%20fill%3D%27%23ECE7DD%27/%3E%3C/svg%3E";
 
+    // 💡 권한이 없을 때 띄우는 모달 (오리지널 LoginButton.jsx 디자인과 기능 100% 일치)
+    if (isLoginNeeded) {
+        return (
+            <Modal
+                isOpen={true}
+                title="로그인"
+                onClose={() => router.push('/community')}
+                showFooter={false}
+                variant="login"
+            >
+                <div className="flex flex-col gap-4">
+                    {emailVerifiedMsg && (
+                        <p className="rounded-lg bg-green-50 px-4 py-3 text-xs text-green-700">
+                            {emailVerifiedMsg}
+                        </p>
+                    )}
+                    <input
+                        id="loginId"
+                        name="loginId"
+                        type="text"
+                        placeholder="아이디"
+                        autoComplete="username"
+                        value={loginId}
+                        onChange={(e) => setLoginId(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleDirectLogin()}
+                        className="w-full rounded-lg border border-[var(--border)] px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                    />
+                    <div className="relative">
+                        <input
+                            id="password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="비밀번호"
+                            autoComplete="current-password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleDirectLogin()}
+                            className="w-full rounded-lg border border-[var(--border)] px-4 py-3 pr-11 text-sm outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-sub)] hover:text-[var(--text-main)]"
+                            tabIndex={-1}
+                            aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+                        >
+                            {showPassword ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m0 0L21 21" />
+                                </svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            )}
+                        </button>
+                    </div>
+                    {loginError && <p className="text-xs text-red-500">{loginError}</p>}
+                    <Button variant="primary" handleClick={handleDirectLogin} is_full>
+                        로그인
+                    </Button>
+                    <div className="flex items-center gap-3 text-[var(--text-sub)]">
+                        <hr className="flex-1 border-[var(--border)]" />
+                        <span className="text-xs">또는</span>
+                        <hr className="flex-1 border-[var(--border)]" />
+                    </div>
+                    {/* 카카오 로그인 */}
+                    <button
+                        type="button"
+                        onClick={handleKakaoLogin}
+                        className="flex w-full items-center justify-center gap-2 rounded-full bg-[#FEE500] py-3 text-sm font-semibold text-[#3C1E1E] transition hover:opacity-90"
+                    >
+                        <span>🍫</span> 카카오로 로그인
+                    </button>
+                </div>
+                {/* 회원가입은 회원가입 페이지로 이동 */}
+                <p className="mt-4 text-center text-xs text-[var(--text-sub)]">
+                    계정이 없으신가요?{" "}
+                    <Link
+                        href="/signup"
+                        className="font-semibold text-[var(--primary)] underline"
+                    >
+                        회원가입
+                    </Link>
+                </p>
+            </Modal>
+        );
+    }
+
     return (
         <main className="w-full">
             <Section>
@@ -229,7 +373,7 @@ export default function CommunityRegisterPage() {
                             </div>
                         </div>
 
-                        {/* 버튼 그룹 (로딩 상태 및 전체 이미지 제거) */}
+                        {/* 버튼 그룹 */}
                         <div className="flex flex-wrap gap-2 mt-5">
                             <Button variant="primary" handleClick={handleSubmit} disabled={isLoading}>
                                 {isLoading ? (
@@ -293,7 +437,7 @@ export default function CommunityRegisterPage() {
                                 key={index}
                                 postId={post.postId}
                                 title={post.title}
-                                author={post.authorLoginId || post.author} // API 응답 필드 유연성 확보
+                                author={post.authorLoginId || post.author} 
                                 date={new Date(post.createdAt || post.date).toLocaleString('ko-KR', {
                                     year: 'numeric', month: '2-digit', day: '2-digit',
                                     hour: '2-digit', minute: '2-digit'
