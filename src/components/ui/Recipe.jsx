@@ -4,13 +4,33 @@ import BookMarkButton from "./BookMarkButton";
 import CustomTag from "./Tag";
 import { Tooltip } from "antd";
 import { addBookmark, removeBookmark, checkBookmarkStatus } from "@/api/bookmarkApi";
-import { getMeApi, user } from "@/api/authApi";
+import Modal from "./Modal";
+import { useAuth } from "@/context/AuthContext";
+import {
+    getSubstitutionSuggestions,
+    getSubstitutePrices
+} from "@/api/substitutionApi";
 
 const conditionTagMap = {
-    DIABETES_LOW_SUGAR: { label: "당뇨 주의", variant: "accent" },
-    DIET_LOW_CALORIE: { label: "다이어트 추천", variant: "primary" },
-    BABY_STAGE1: { label: "이유식", variant: "secondary" },
-    ALLERGY_EGG: { label: "계란 알레르기", variant: "accent" },
+    DIET_LOW_CALORIE: {
+        label: "다이어트 추천",
+        variant: "primary",
+    },
+
+    LOW_SODIUM: {
+        label: "저염식 추천",
+        variant: "secondary",
+    },
+
+    ALLERGY_EGG: {
+        label: "계란 알레르기",
+        variant: "accent",
+    },
+
+    ALLERGY_MILK: {
+        label: "우유 알레르기",
+        variant: "accent",
+    },
 };
 
 export default function Recipe({
@@ -32,10 +52,14 @@ export default function Recipe({
     missingIngredients = [],
     substituteSuggestions = [],
     warnings = [],
+    ownedIngredients = [],
     onBookmarkToggle
 }) {
+    const { user } = useAuth();
     const [isBookmarked, setIsBookmarked] = useState(false);
-    const firstSubstitute = substituteSuggestions[0];
+    const [substitutionData, setSubstitutionData] = useState(null);
+    const [isSubstitutionOpen, setIsSubstitutionOpen] = useState(false);
+    const [isSubstitutionLoading, setIsSubstitutionLoading] = useState(false);
 
     useEffect(() => {
         const fetchBookmarkStatus = async () => {
@@ -45,19 +69,17 @@ export default function Recipe({
                     return;
                 }
 
-                let userId = user?.userId;
-                if (!userId) {
-                    const me = await getMeApi();
-                    userId = me?.userId;
-                }
+                const userId = user?.userId;
 
                 if (!userId) {
                     setIsBookmarked(false);
                     return;
                 }
 
-                const status = await checkBookmarkStatus(recipeId, userId);
-                setIsBookmarked(Boolean(status?.isBookmarked));
+                const status = await checkBookmarkStatus(recipeId);
+                setIsBookmarked(
+                    status === true || status?.isBookmarked === true
+                );
             } catch (error) {
                 console.error("북마크 상태 확인 실패:", error);
                 setIsBookmarked(false);
@@ -65,27 +87,23 @@ export default function Recipe({
         };
 
         fetchBookmarkStatus();
-    }, [recipeId]);
+    }, [recipeId, user?.userId]);
 
     const handleBookmarkToggle = async (nextBookmarked) => {
         try {
             if (!recipeId) return false;
 
-            let userId = user?.userId;
-            if (!userId) {
-                const me = await getMeApi();
-                userId = me?.userId;
-            }
+            const userId = user?.userId;
             if (!userId) return false;
 
             if (nextBookmarked === false) {
-                await removeBookmark(recipeId, userId);
+                await removeBookmark(recipeId);
                 setIsBookmarked(false);
                 onBookmarkToggle?.(false);
                 return false;
             }
 
-            await addBookmark(recipeId, userId);
+            await addBookmark(recipeId);
             setIsBookmarked(true);
             onBookmarkToggle?.(true);
             return true;
@@ -94,7 +112,70 @@ export default function Recipe({
             return false;
         }
     };
+    const handleSubstitutionClick = async (e) => {
+        e.stopPropagation();
 
+        if (substitutionData) {
+            setIsSubstitutionOpen(true);
+            return;
+        }
+
+        try {
+            setIsSubstitutionLoading(true);
+
+            const data = await getSubstitutionSuggestions(
+                recipeId,
+                ownedIngredients
+            );
+
+            const targetIngredients = data?.results
+                ?.filter(item => item.decisionType === "REQUIRED")
+                ?.map(item => item.missingIngredient)
+                ?.filter(Boolean) || [];
+
+            const prices = targetIngredients.length > 0
+                ? await getSubstitutePrices(targetIngredients)
+                : [];
+            console.log("가격 정보:", prices);
+
+            const mergedResults = data?.results?.map(item => {
+                const priceInfo = prices.find(
+                    price => price.ingredientName === item.missingIngredient
+                );
+
+                return {
+                    ...item,
+                    priceInfo: priceInfo || null,
+                };
+            }) || [];
+
+            setSubstitutionData({
+                ...data,
+                results: mergedResults,
+            });
+            setIsSubstitutionOpen(true);
+        } catch (error) {
+            console.error("대체재 추천 조회 실패:", error);
+        } finally {
+            setIsSubstitutionLoading(false);
+        }
+    };
+    const decisionTypeStyles = {
+        SUBSTITUTE_AVAILABLE:
+            "bg-green-100 text-green-700 border border-green-200",
+
+        OPTIONAL:
+            "bg-amber-100 text-amber-700 border border-amber-200",
+
+        REQUIRED:
+            "bg-rose-100 text-rose-700 border border-rose-200",
+    };
+
+    const decisionTypeLabels = {
+        SUBSTITUTE_AVAILABLE: "대체 가능",
+        OPTIONAL: "생략 가능",
+        REQUIRED: "필수 재료",
+    };
     return (
         <div className="w-full overflow-hidden rounded-2xl bg-gray-100 border border-gray-100 flex flex-col">
 
@@ -159,11 +240,13 @@ export default function Recipe({
                             <Tooltip
                                 placement="top"
                                 color="#ffffff"
-                                overlayInnerStyle={{
-                                    color: "#374151",
-                                    borderRadius: "12px",
-                                    padding: "10px 12px",
-                                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                                styles={{
+                                    body: {
+                                        color: "#374151",
+                                        borderRadius: "12px",
+                                        padding: "10px 12px",
+                                        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                                    },
                                 }}
                                 title={
                                     missingIngredients.length ? (
@@ -202,43 +285,18 @@ export default function Recipe({
                             </Tooltip>
 
 
-                            {substituteSuggestions.length > 0 && (
-                                <CustomTag variant="secondary">
-                                    대체재 가능
+                            {missingIngredients.length > 0 && (
+                                <CustomTag
+                                    variant="action"
+                                    onClick={handleSubstitutionClick}
+                                >
+                                    {isSubstitutionLoading
+                                        ? "확인 중..."
+                                        : "대체재 보기"}
                                 </CustomTag>
                             )}
 
                         </div>
-
-
-                        {/* 대체재 한 줄 */}
-                        {firstSubstitute && (
-                            <div className="text-xs text-gray-600 leading-relaxed">
-                                대체재{" "}
-                                <span className="font-medium text-gray-800">
-                                    {firstSubstitute.missingIngredient}
-                                </span>
-                                {" → "}
-                                <span className="font-medium text-gray-800">
-                                    {firstSubstitute.substituteIngredient || "없음"}
-                                </span>
-
-                                {" "}
-
-                                <span
-                                    className={
-                                        firstSubstitute.decisionType === "CAUTION"
-                                            ? "text-orange-500 font-medium"
-                                            : "text-gray-500"
-                                    }
-                                >
-                                    {firstSubstitute.decisionType === "CAUTION"
-                                        ? "(맛/간 차이 주의)"
-                                        : "(대체 가능)"}
-                                </span>
-                            </div>
-                        )}
-
 
                         {/* 추천 이유 */}
                         {reason && (
@@ -253,6 +311,92 @@ export default function Recipe({
                                 </div>
                                 {llmExplanation}
                             </div>
+                        )}
+                        {isSubstitutionOpen && substitutionData && (
+                            <Modal
+                                isOpen={isSubstitutionOpen}
+                                title="대체재 추천"
+                                description="보유 재료를 기준으로 부족 재료의 대체 가능성을 판단했어요."
+                                onClose={() => setIsSubstitutionOpen(false)}
+                                showFooter={false}
+                            >
+                                <div className="flex flex-col gap-3">
+                                    {substitutionData?.results?.map((item, index) => (
+                                        <div
+                                            key={`${item.missingIngredient}-${index}`}
+                                            className="rounded-xl border border-gray-100 bg-white p-3"
+                                        >
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div className="text-sm font-bold text-gray-800">
+                                                    {item.missingIngredient}
+                                                </div>
+
+                                                <span
+                                                    className={`
+        rounded-full
+        px-2 py-1
+        text-xs font-semibold
+        ${decisionTypeStyles[item.decisionType]}
+    `}
+                                                >
+                                                    {decisionTypeLabels[item.decisionType]}
+                                                </span>
+                                            </div>
+
+                                            {item.decisionType === "SUBSTITUTE_AVAILABLE" && (
+                                                <div className="mt-2 text-sm text-gray-700">
+                                                    대체재:{" "}
+                                                    <span className="font-semibold">
+                                                        {item.substituteIngredient}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {item.priceInfo?.items?.length > 0 ? (() => {
+                                                const firstItem = item.priceInfo.items[0];
+                                                const productUrl =
+                                                    firstItem.link ||
+                                                    firstItem.url ||
+                                                    firstItem.productUrl ||
+                                                    firstItem.linkUrl ||
+                                                    firstItem.purchaseUrl;
+
+                                                return productUrl ? (
+                                                    <a
+                                                        href={productUrl}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="
+    mt-2 inline-flex items-center rounded-lg
+    bg-blue-50 px-3 py-2
+    text-xs font-semibold text-blue-600
+    border border-blue-100
+    transition hover:bg-blue-100
+"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                        }}
+                                                    >
+                                                        상품 보기
+                                                    </a>
+                                                ) : (
+                                                    <div className="mt-2 text-xs text-gray-400">
+                                                        상품 링크가 없습니다.
+                                                    </div>
+                                                );
+                                            })() : item.decisionType === "REQUIRED" ? (
+                                                <div className="mt-2 text-xs text-gray-400">
+                                                    쇼핑 상품을 찾지 못했어요.
+                                                </div>
+                                            ) : null}
+
+                                            <div className="mt-2 text-xs leading-relaxed text-gray-500">
+                                                {item.reason}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Modal>
                         )}
 
                     </>

@@ -8,6 +8,7 @@ export const initialMyPageData = {
   recentPosts: [],
   bookmarkedRecipes: [],
   errors: [],
+  activityUnavailable: false,
   authRequired: false,
 };
 
@@ -36,19 +37,20 @@ export const accountSettingItems = [
   {
     id: "profile",
     label: "프로필 정보",
-    desc: "닉네임과 프로필 이미지를 관리합니다.",
-    status: "API 대기",
+    desc: "닉네임, 이메일, 프로필 이미지를 확인합니다.",
+    status: "연결됨",
+    tone: "success",
   },
   {
     id: "preferences",
     label: "식단 조건",
     desc: "추천에 반영할 개인 조건을 관리합니다.",
-    status: "연동 예정",
+    status: "준비 중",
   },
   {
     id: "security",
     label: "계정 보안",
     desc: "비밀번호와 로그인 세션을 확인합니다.",
-    status: "연동 예정",
+    status: "준비 중",
   },
 ];

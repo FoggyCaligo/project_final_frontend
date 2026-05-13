@@ -1,6 +1,6 @@
-import styles from "@/app/recipes/[id]/RecipeDetail.module.css";
+import styles from "@/app/recipes/[id]/Recipe.module.css";
 
-export default function RecipeDetailInfoTable({ title, data, renderValue, emptyMessage, columns = 1 }) {
+export default function RecipeInfoTable({ title, data, renderValue, emptyMessage, columns = 1 }) {
   if (!data || data.length === 0) {
     return (
       <div className={styles.infoTableContainer}>

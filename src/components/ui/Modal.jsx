@@ -23,7 +23,9 @@ export default function Modal({
     }, []);
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!mounted || !isOpen) return;
+
+        const previousOverflow = document.body.style.overflow;
 
         const handleKeyDown = (e) => {
             if (e.key === "Escape") {
@@ -35,12 +37,12 @@ export default function Modal({
         window.addEventListener("keydown", handleKeyDown);
 
         return () => {
-            document.body.style.overflow = "";
+            document.body.style.overflow = previousOverflow;
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, [isOpen, onClose]);
+    }, [mounted, isOpen, onClose]);
 
-    if (!isOpen || !mounted) return null;
+    if (!mounted || !isOpen) return null;
 
     const base = {
         overlay: "fixed inset-0 z-50 flex items-center justify-center px-4 py-6",
@@ -103,6 +105,7 @@ export default function Modal({
                         >
                             {title}
                         </h2>
+
                         <button
                             type="button"
                             className={base.closeButton}
@@ -130,11 +133,22 @@ export default function Modal({
 
                 {showFooter && (
                     <div className={base.footer} style={inlineStyle.footer}>
-                        <Button variant="secondary" className="w-fill" is_square="true" is_full="true" handleClick={onClose}>
+                        <Button
+                            variant="secondary"
+                            className="w-fill"
+                            is_square="true"
+                            is_full="true"
+                            handleClick={onClose}
+                        >
                             {cancelText}
                         </Button>
 
-                        <Button variant="primary" is_square="true" is_full="true" handleClick={onConfirm}>
+                        <Button
+                            variant="primary"
+                            is_square="true"
+                            is_full="true"
+                            handleClick={onConfirm}
+                        >
                             {confirmText}
                         </Button>
                     </div>

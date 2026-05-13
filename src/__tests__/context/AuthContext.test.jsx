@@ -1,16 +1,20 @@
-import { render, screen, act, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 
-// Next.js 라우터 모킹
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn(() => ({ push: jest.fn(), replace: jest.fn() })),
-  usePathname: jest.fn(() => '/'),
+const DASHBOARD_NOTICE_MODAL_SESSION_KEY = 'today-fridge-dashboard-notice-modal-shown';
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/',
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+  }),
 }));
 
-// getMeApi 모킹 (login()이 내부적으로 호출)
-jest.mock('@/api/authApi', () => ({
-  getMeApi: jest.fn().mockResolvedValue({ loginId: 'testuser1', nickname: 'testuser1', userId: 1 }),
+vi.mock('@/api/authApi', () => ({
+  getMeApi: vi.fn().mockResolvedValue({ data: { data: {} } }),
 }));
 
 // AuthContext를 소비하는 테스트용 컴포넌트
@@ -89,6 +93,16 @@ describe('AuthContext', () => {
     });
   });
 
+  test('login() clears dashboard notice modal session marker', async () => {
+    const user = userEvent.setup();
+    sessionStorage.setItem(DASHBOARD_NOTICE_MODAL_SESSION_KEY, 'true');
+    setup();
+
+    await user.click(screen.getByText('login-general'));
+
+    expect(sessionStorage.getItem(DASHBOARD_NOTICE_MODAL_SESSION_KEY)).toBeNull();
+  });
+
   // ===== logout =====
 
   test('logout() 호출 시 user가 null로 초기화된다', async () => {
@@ -110,6 +124,17 @@ describe('AuthContext', () => {
     await user.click(screen.getByText('logout'));
 
     expect(sessionStorage.getItem('authUser')).toBeNull();
+  });
+
+  test('logout() clears dashboard notice modal session marker', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByText('login-general'));
+    sessionStorage.setItem(DASHBOARD_NOTICE_MODAL_SESSION_KEY, 'true');
+    await user.click(screen.getByText('logout'));
+
+    expect(sessionStorage.getItem(DASHBOARD_NOTICE_MODAL_SESSION_KEY)).toBeNull();
   });
 
   // ===== 새로고침 복원 =====
