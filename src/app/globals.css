@@ -377,6 +377,86 @@ textarea {
   aspect-ratio: 1 / 1;
 }
 
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.95fr) minmax(420px, 1.05fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.dashboard-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.dashboard-recipe-card {
+  container-type: inline-size;
+}
+
+.dashboard-recipe-item {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.dashboard-recipe-thumb {
+  min-height: 132px;
+  overflow: hidden;
+  background: var(--color-thumb-bg);
+}
+
+.dashboard-recipe-content {
+  min-width: 0;
+  padding: 16px;
+}
+
+@container (max-width: 520px) {
+  .dashboard-recipe-item {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-recipe-thumb {
+    aspect-ratio: 16 / 10;
+    min-height: 0;
+  }
+}
+
+.dashboard-metric-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dashboard-bar-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-bg-soft);
+}
+
+.dashboard-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.dashboard-bar-neutral {
+  background: var(--color-text-sub);
+}
+
+.dashboard-bar-warning {
+  background: var(--color-accent);
+}
+
+.dashboard-bar-danger {
+  background: var(--color-danger);
+}
+
+.dashboard-bar-success {
+  background: var(--color-primary);
+}
+
 /* 19. 게시글 / 커뮤니티 카드 */
 .post-card {
   padding: 22px;
@@ -404,6 +484,10 @@ textarea {
   .form-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .dashboard-main-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
@@ -413,6 +497,20 @@ textarea {
   .grid-2,
   .form-row {
     grid-template-columns: 1fr;
+  }
+
+  .section-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-recipe-item {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-recipe-thumb {
+    aspect-ratio: 16 / 10;
+    min-height: 0;
   }
 }
 

@@ -1,5 +1,6 @@
 export const toArray = (value) => (Array.isArray(value) ? value : []);
 
+//  냉장고  화면에 사용하는 파라미터
 export function normalizeIngredient(item = {}) {
   const quantity = item.quantity ?? item.qty ?? "-";
   const unit = item.unit ?? "";
@@ -28,6 +29,7 @@ export function normalizeIngredient(item = {}) {
   };
 }
 
+//  레시피 화면에 사용하는 파라미터
 export function normalizeRecipe(recipe = {}) {
   return {
     id: recipe.recipeId ?? recipe.id ?? recipe.title,

@@ -552,7 +552,7 @@ string
 매칭된 식재료명 
 mall_name
 string
-쇼핑몰 명칭 (쿠팡, 네이버 등)
+쇼핑몰 명칭 (11번가, 네이버 등)
 price
 number
 판매 가격
@@ -570,7 +570,7 @@ MCP를 통한 실시간 데이터 여부
 {
   "keyword": "닭가슴살 1kg",
   "results": [
-    {"mall_name": "쿠팡", "price": 12000, "unit_price": "100g당 1,200원", "link": "https://coupang.com/..."},
+    {"mall_name": "11번가", "price": 12000, "unit_price": "100g당 1,200원", "link": "https://coupang.com/..."},
     {"mall_name": "네이버쇼핑", "price": 11500, "unit_price": "100g당 1,150원", "link": "https://search.shopping.naver.com/..."}
   ]
 }
