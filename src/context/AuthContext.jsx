@@ -37,8 +37,8 @@ export function AuthProvider({ children }) {
         sessionStorage.removeItem("authUser");
         sessionStorage.removeItem(DASHBOARD_NOTICE_MODAL_SESSION_KEY);
         setUser(null);
-        router.push("/");
-    }, [router]);
+        window.location.href = "/";
+    }, []);
 
     // 401 토큰 만료 시 axios 인터셉터가 발행하는 이벤트를 수신해 자동 로그아웃
     useEffect(() => {
