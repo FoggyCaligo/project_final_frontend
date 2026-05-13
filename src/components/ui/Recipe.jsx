@@ -12,10 +12,25 @@ import {
 } from "@/api/substitutionApi";
 
 const conditionTagMap = {
-    DIABETES_LOW_SUGAR: { label: "당뇨 주의", variant: "accent" },
-    DIET_LOW_CALORIE: { label: "다이어트 추천", variant: "primary" },
-    BABY_STAGE1: { label: "이유식", variant: "secondary" },
-    ALLERGY_EGG: { label: "계란 알레르기", variant: "accent" },
+    DIET_LOW_CALORIE: {
+        label: "다이어트 추천",
+        variant: "primary",
+    },
+
+    LOW_SODIUM: {
+        label: "저염식 추천",
+        variant: "secondary",
+    },
+
+    ALLERGY_EGG: {
+        label: "계란 알레르기",
+        variant: "accent",
+    },
+
+    ALLERGY_MILK: {
+        label: "우유 알레르기",
+        variant: "accent",
+    },
 };
 
 export default function Recipe({
@@ -337,17 +352,39 @@ export default function Recipe({
                                                 </div>
                                             )}
 
-                                            {item.priceInfo?.items?.length > 0 ? (
-                                                <a
-                                                    href={item.priceInfo.items[0].link}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="mt-1 inline-block text-blue-600 underline"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    상품 보기
-                                                </a>
-                                            ) : item.decisionType === "REQUIRED" ? (
+                                            {item.priceInfo?.items?.length > 0 ? (() => {
+                                                const firstItem = item.priceInfo.items[0];
+                                                const productUrl =
+                                                    firstItem.link ||
+                                                    firstItem.url ||
+                                                    firstItem.productUrl ||
+                                                    firstItem.linkUrl ||
+                                                    firstItem.purchaseUrl;
+
+                                                return productUrl ? (
+                                                    <a
+                                                        href={productUrl}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="
+    mt-2 inline-flex items-center rounded-lg
+    bg-blue-50 px-3 py-2
+    text-xs font-semibold text-blue-600
+    border border-blue-100
+    transition hover:bg-blue-100
+"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                        }}
+                                                    >
+                                                        상품 보기
+                                                    </a>
+                                                ) : (
+                                                    <div className="mt-2 text-xs text-gray-400">
+                                                        상품 링크가 없습니다.
+                                                    </div>
+                                                );
+                                            })() : item.decisionType === "REQUIRED" ? (
                                                 <div className="mt-2 text-xs text-gray-400">
                                                     쇼핑 상품을 찾지 못했어요.
                                                 </div>
