@@ -2,6 +2,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import LoginButton from '@/components/layout/public/LoginButton';
 
+// Next.js 라우터 모킹
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(() => ({ push: jest.fn(), replace: jest.fn() })),
+  usePathname: jest.fn(() => '/'),
+}));
+
 // AuthContext 모킹
 jest.mock('@/context/AuthContext', () => ({
   useAuth: jest.fn(),
@@ -10,7 +16,6 @@ jest.mock('@/context/AuthContext', () => ({
 // API 모킹
 jest.mock('@/api/authApi', () => ({
   loginApi: jest.fn(),
-  signupApi: jest.fn(),
 }));
 
 // LogoutButton 모킹: 인증 상태일 때 LoginButton이 LogoutButton을 렌더링하므로 단순화
@@ -20,7 +25,7 @@ jest.mock('@/components/layout/private/LogoutButton', () => ({
 }));
 
 const { useAuth } = require('@/context/AuthContext');
-const { loginApi, signupApi } = require('@/api/authApi');
+const { loginApi } = require('@/api/authApi');
 
 // 인증되지 않은 상태로 렌더링하는 헬퍼
 const setupGuest = () => {
@@ -78,21 +83,6 @@ describe('LoginButton', () => {
     expect(screen.queryByPlaceholderText('아이디')).not.toBeInTheDocument();
   });
 
-  // ===== 탭 전환 =====
-
-  test('회원가입 탭 클릭 시 회원가입 폼이 표시된다', async () => {
-    const { user } = setupGuest();
-    render(<LoginButton />);
-
-    await user.click(screen.getByText('로그인'));
-    // 탭 버튼(로그인/회원가입) 중 회원가입 탭 선택
-    const signupTab = screen.getAllByText('회원가입')[0];
-    await user.click(signupTab);
-
-    expect(screen.getByPlaceholderText('이메일')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('닉네임 (2~20자)')).toBeInTheDocument();
-  });
-
   // ===== 로그인 =====
 
   test('아이디/비밀번호 미입력 시 에러 메시지를 표시한다', async () => {
@@ -143,60 +133,28 @@ describe('LoginButton', () => {
     });
   });
 
-  // ===== 회원가입 =====
+  // ===== 회원가입 링크 =====
 
-  test('회원가입 폼 미입력 시 에러 메시지를 표시한다', async () => {
+  test('로그인 모달에 /signup으로 이동하는 회원가입 링크가 표시된다', async () => {
     const { user } = setupGuest();
     render(<LoginButton />);
 
     await user.click(screen.getByText('로그인'));
-    const signupTab = screen.getAllByText('회원가입')[0];
-    await user.click(signupTab);
-    await user.click(screen.getByText('회원가입', { selector: 'button[type="button"]' }));
 
-    await waitFor(() => {
-      expect(screen.getByText('모든 항목을 입력해주세요.')).toBeInTheDocument();
-    });
+    const signupLink = screen.getByRole('link', { name: '회원가입' });
+    expect(signupLink).toBeInTheDocument();
+    expect(signupLink).toHaveAttribute('href', '/signup');
   });
 
-  test('회원가입 성공 시 로그인 탭으로 전환되고 완료 메시지를 표시한다', async () => {
+  test('회원가입 링크 클릭 시 모달이 닫힌다', async () => {
     const { user } = setupGuest();
-    signupApi.mockResolvedValue({ data: { success: true } });
     render(<LoginButton />);
 
     await user.click(screen.getByText('로그인'));
-    const signupTab = screen.getAllByText('회원가입')[0];
-    await user.click(signupTab);
+    expect(screen.getByPlaceholderText('아이디')).toBeInTheDocument();
 
-    await user.type(screen.getByPlaceholderText('아이디 (4~20자, 영문/숫자/_)'), 'newuser1');
-    await user.type(screen.getByPlaceholderText('이메일'), 'new@example.com');
-    await user.type(screen.getByPlaceholderText('비밀번호 (8자 이상, 영문+숫자+특수문자)'), 'Test1234!');
-    await user.type(screen.getByPlaceholderText('닉네임 (2~20자)'), '새유저');
-    await user.click(screen.getByText('회원가입', { selector: 'button[type="button"]' }));
+    await user.click(screen.getByRole('link', { name: '회원가입' }));
 
-    await waitFor(() => {
-      expect(screen.getByText('회원가입이 완료되었습니다. 로그인해주세요.')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('아이디')).toBeInTheDocument(); // 로그인 탭으로 전환
-    });
-  });
-
-  test('회원가입 실패 시 에러 메시지를 표시한다', async () => {
-    const { user } = setupGuest();
-    signupApi.mockRejectedValue({ message: '이미 사용 중인 아이디입니다.' });
-    render(<LoginButton />);
-
-    await user.click(screen.getByText('로그인'));
-    const signupTab = screen.getAllByText('회원가입')[0];
-    await user.click(signupTab);
-
-    await user.type(screen.getByPlaceholderText('아이디 (4~20자, 영문/숫자/_)'), 'dupuser');
-    await user.type(screen.getByPlaceholderText('이메일'), 'dup@example.com');
-    await user.type(screen.getByPlaceholderText('비밀번호 (8자 이상, 영문+숫자+특수문자)'), 'Test1234!');
-    await user.type(screen.getByPlaceholderText('닉네임 (2~20자)'), '중복');
-    await user.click(screen.getByText('회원가입', { selector: 'button[type="button"]' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('이미 사용 중인 아이디입니다.')).toBeInTheDocument();
-    });
+    expect(screen.queryByPlaceholderText('아이디')).not.toBeInTheDocument();
   });
 });

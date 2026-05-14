@@ -26,10 +26,26 @@ export function AuthProvider({ children }) {
       } catch {
         sessionStorage.removeItem("authUser");
         setUser(null);
+        router.push("/");
       }
     }
     setLoading(false);
   }, []);
+
+    // 로그아웃 후 호출: 세션 초기화 (logout을 useEffect보다 먼저 선언해야 TDZ 방지)
+    const logout = useCallback(() => {
+        sessionStorage.removeItem("authUser");
+        sessionStorage.removeItem(DASHBOARD_NOTICE_MODAL_SESSION_KEY);
+        setUser(null);
+        window.location.href = "/";
+    }, []);
+
+    // 401 토큰 만료 시 axios 인터셉터가 발행하는 이벤트를 수신해 자동 로그아웃
+    useEffect(() => {
+        const handleUnauthorized = () => logout();
+        globalThis.addEventListener("auth:unauthorized", handleUnauthorized);
+        return () => globalThis.removeEventListener("auth:unauthorized", handleUnauthorized);
+    }, [logout]);
 
   // 로그인 성공 후 호출: getMeApi로 닉네임 조회 후 세션/상태 업데이트
   const login = useCallback(async (loginId, loginType = "general", defaultNickname = null) => {
@@ -87,14 +103,6 @@ export function AuthProvider({ children }) {
       router.replace("/");
     }
   }, [pathname, router, login]);
-
-  // 로그아웃 후 호출: 세션 초기화
-  const logout = useCallback(() => {
-    sessionStorage.removeItem("authUser");
-    sessionStorage.removeItem(DASHBOARD_NOTICE_MODAL_SESSION_KEY);
-    setUser(null);
-    router.push("/");
-  }, [router]);
 
   // Provider의 value 객체가 매 렌더링마다 재생성되는 것을 방지하여 성능 최적화
   const contextValue = useMemo(

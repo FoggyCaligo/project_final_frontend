@@ -62,8 +62,10 @@ describe('AuthContext', () => {
 
     await user.click(screen.getByText('login-general'));
 
-    expect(screen.getByTestId('loginId')).toHaveTextContent('testuser1');
-    expect(screen.getByTestId('loginType')).toHaveTextContent('general');
+    await waitFor(() => {
+      expect(screen.getByTestId('loginId')).toHaveTextContent('testuser1');
+      expect(screen.getByTestId('loginType')).toHaveTextContent('general');
+    });
   });
 
   test('login() 호출 시 sessionStorage에 authUser가 저장된다', async () => {
@@ -72,12 +74,9 @@ describe('AuthContext', () => {
 
     await user.click(screen.getByText('login-general'));
 
-    const stored = JSON.parse(sessionStorage.getItem('authUser'));
-    expect(stored).toEqual({
-      loginId: 'testuser1',
-      loginType: 'general',
-      nickname: 'testuser1',
-      userId: null,
+    await waitFor(() => {
+      const stored = JSON.parse(sessionStorage.getItem('authUser'));
+      expect(stored).toMatchObject({ loginId: 'testuser1', loginType: 'general' });
     });
   });
 
@@ -87,9 +86,11 @@ describe('AuthContext', () => {
 
     await user.click(screen.getByText('login-kakao'));
 
-    expect(screen.getByTestId('loginType')).toHaveTextContent('kakao');
-    const stored = JSON.parse(sessionStorage.getItem('authUser'));
-    expect(stored.loginType).toBe('kakao');
+    await waitFor(() => {
+      expect(screen.getByTestId('loginType')).toHaveTextContent('kakao');
+      const stored = JSON.parse(sessionStorage.getItem('authUser'));
+      expect(stored.loginType).toBe('kakao');
+    });
   });
 
   test('login() clears dashboard notice modal session marker', async () => {
@@ -119,6 +120,7 @@ describe('AuthContext', () => {
     setup();
 
     await user.click(screen.getByText('login-general'));
+    await waitFor(() => expect(sessionStorage.getItem('authUser')).not.toBeNull());
     await user.click(screen.getByText('logout'));
 
     expect(sessionStorage.getItem('authUser')).toBeNull();

@@ -100,8 +100,9 @@ describe('authApi', () => {
 
     const res = await getMeApi();
 
-    expect(api.get).toHaveBeenCalledWith('/v1/auth/me');
-    expect(res.data.data.loginId).toBe('testuser1');
+    expect(api.get).toHaveBeenCalledWith('/v1/auth/me', { withCredentials: true });
+    // getMeApi는 unwrapApiData로 response.data.data를 반환함
+    expect(res.loginId).toBe('testuser1');
   });
 
   test('getMeApi: 인증 없이 호출 시 reject된 Promise를 반환한다', async () => {

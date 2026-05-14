@@ -12,4 +12,8 @@ export const shoppingApi = {
   // 키워드로 실시간 최저가 검색 (검색기능 : 로그인 불필요)
   searchByKeyword: (keyword) =>
     api.get("/v1/shopping/search", { params: { keyword } }),
+
+  // 레시피 부족 재료의 최저가 조회 (로그인 필요)
+  getMissingIngredientsPrices: (recipeId) =>
+    api.get(`/v1/shopping/recipes/${recipeId}/missing-ingredients-prices`),
 };

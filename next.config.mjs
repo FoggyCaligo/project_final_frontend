@@ -2,19 +2,15 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
-const API_PROXY_TARGET =
-  process.env.NEXT_PUBLIC_API_PROXY_TARGET || "http://localhost:8080";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: [
-    "*.trycloudflare.com",
-  ],
+  allowedDevOrigins: ["*.ngrok-free.app", "*.ngrok.io", "*.trycloudflare.com"],
   async rewrites() {
     return [
       {
-        source: "/api/v1/:path*",
-        destination: "http://localhost:8080/api/v1/:path*",
+        source: '/api/images/:path*',
+        destination: 'http://43.201.1.45/uploads/:path*',
       },
     ];
   },

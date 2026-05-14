@@ -30,9 +30,9 @@ describe('LogoutButton', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  test('loginType이 general이면 loginId 텍스트와 로그아웃 버튼을 렌더링한다', () => {
+  test('loginType이 general이면 nickname 텍스트와 로그아웃 버튼을 렌더링한다', () => {
     useAuth.mockReturnValue({
-      user: { loginId: 'testuser1', loginType: 'general' },
+      user: { loginId: 'testuser1', loginType: 'general', nickname: 'testuser1' },
       logout: jest.fn(),
     });
 

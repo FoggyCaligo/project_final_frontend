@@ -7,7 +7,9 @@ import RecipeInfoTable from "@/components/recipe/RecipeInfoTable";
 import RecipeStep from "@/components/recipe/RecipeStep";
 import CookRecipeButton from "@/components/recipe/CookRecipeButton";
 import BookmarkButton from "@/components/recipe/BookmarkButton";
+import MissingIngredientsPrices from "@/components/recipe/MissingIngredientsPrices";
 import styles from "./Recipe.module.css";
+import PrivateLayout from "@/components/layout/private/PrivateLayout";
 import { getRecipeDetail } from "@/api/recipeApi";
 import PublicLayout from "@/components/layout/public/PublicLayout";
 
@@ -154,6 +156,8 @@ export default function RecipePage() {
               columns={2}
               renderValue={(item) => item.isStars ? renderStars(item.value) : item.value}
             />
+
+            <MissingIngredientsPrices recipeId={recipeData.recipeId} />
           </div>
 
           {/* Right Column */}
