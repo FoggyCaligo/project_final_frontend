@@ -3,9 +3,7 @@
 // 목적: 게시글 이미지 업로드
 // 1. 허용할 프론트엔드 주소 지정 (보안상 '*' 보다 명시적 주소가 좋습니다)
 // React 개발 서버 포트에 맞게 변경하세요 (예: 3000, 5173 등)
-$allowed_origin = 'http://localhost:3000'; 
-
-header("Access-Control-Allow-Origin: {$allowed_origin}");
+header('Access-Control-Allow-Origin: *');
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 // FormData 전송 시 필요한 헤더들을 허용
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With"); 
