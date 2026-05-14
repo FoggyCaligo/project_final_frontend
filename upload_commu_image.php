@@ -1,30 +1,22 @@
 <?php
-// 위치: /var/www/html
-// 목적: 게시글 이미지 업로드
-// 1. 허용할 프론트엔드 주소 지정 (보안상 '*' 보다 명시적 주소가 좋습니다)
-// React 개발 서버 포트에 맞게 변경하세요 (예: 3000, 5173 등)
-$allowed_origin = 'http://localhost:3000'; 
 
-header("Access-Control-Allow-Origin: {$allowed_origin}");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-// FormData 전송 시 필요한 헤더들을 허용
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With"); 
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
-// ※ 만약 로그인 세션 쿠키를 함께 보내야 한다면 아래 주석을 해제하세요.
-// header("Access-Control-Allow-Credentials: true");
+$allowed_origins = [
+    'https://today-fridge-frontend-deploy.vercel.app',
+    'https://today-fridge-frontend-deploy-git-mainbackup-ddujeongs-projects.vercel.app',
+];
 
-// 2. Preflight(OPTIONS) 요청에 대한 조기 응답 처리
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    // OPTIONS 요청에는 200 OK만 응답하고 스크립트 실행 종료
-    http_response_code(200);
-    exit();
+if (in_array($origin, $allowed_origins, true)) {
+    header("Access-Control-Allow-Origin: {$origin}");
 }
 
-// POST 요청 확인 (기존 코드와 동일)
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['error' => 'Only POST method is allowed.']);
-    exit;
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
 }
 // ... (기존 파일 업로드 및 responseData 처리 로직 시작)
 
